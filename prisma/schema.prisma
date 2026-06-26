@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EstadoCliente {
+  ACTIVO
+  SUSPENDIDO
+  CANCELADO
+}
+
+enum MetodoPago {
+  MERCADOPAGO
+  TRANSBANK
+  TRANSFERENCIA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  CONFIRMADO
+  FALLIDO
+}
+
+enum TipoCobro {
+  AUTOMATICO
+  MANUAL
+}
+
+enum TipoAnuncio {
+  INFO
+  ADVERTENCIA
+  EXITO
+  MANTENIMIENTO
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  createdAt DateTime @default(now())
+}
+
+model Plan {
+  id               String        @id @default(cuid())
+  clave            String        @unique
+  nombre           String
+  precio           Float
+  intervalo        String        @default("mensual")
+  maxProfesionales Int           @default(0) @map("max_profesionales")
+  modulos          String[]      @default([])
+  activo           Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  clientes         Cliente[]
+  suscripciones    Suscripcion[]
+}
+
+model Cliente {
+  id             String        @id @default(cuid())
+  nombre         String
+  email          String        @unique
+  telefono       String?
+  dominio        String        @unique
+  coolifyAppId   String?       @unique @map("coolify_app_id")
+  serviceKey     String        @unique @default(cuid()) @map("service_key")
+  apiUrl         String?       @map("api_url")
+  planId         String?       @map("plan_id")
+  plan           Plan?         @relation(fields: [planId], references: [id])
+  estado         EstadoCliente @default(ACTIVO)
+  notas          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  suscripciones  Suscripcion[]
+  magicLinks     MagicLink[]
+  anuncios       Anuncio[]
+}
+
+model Anuncio {
+  id        String      @id @default(cuid())
+  titulo    String
+  mensaje   String
+  tipo      TipoAnuncio @default(INFO)
+  // clienteId null = anuncio global (visible para todos los clientes)
+  clienteId String?     @map("cliente_id")
+  cliente   Cliente?    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  activo    Boolean     @default(true)
+  fechaFin  DateTime?   @map("fecha_fin")
+  createdAt DateTime    @default(now())
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  clienteId String   @map("cliente_id")
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usado     Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Suscripcion {
+  id               String     @id @default(cuid())
+  clienteId        String     @map("cliente_id")
+  cliente          Cliente    @relation(fields: [clienteId], references: [id])
+  monto            Float
+  moneda           String     @default("CLP")
+  metodoPago       MetodoPago @map("metodo_pago")
+  tipoCobro        TipoCobro  @default(MANUAL) @map("tipo_cobro")
+  planId           String?    @map("plan_id")
+  plan             Plan?      @relation(fields: [planId], references: [id])
+  mpSubscriptionId String?    @map("mp_subscription_id")
+  mpPreapprovalId  String?    @map("mp_preapproval_id")
+  tarjetaUlt4      String?    @map("tarjeta_ult4")
+  fechaInicio      DateTime   @map("fecha_inicio")
+  fechaVencimiento DateTime   @map("fecha_vencimiento")
+  diasGracia       Int        @default(3) @map("dias_gracia")
+  activa           Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  pagos            Pago[]
+}
+
+model Pago {
+  id            String      @id @default(cuid())
+  suscripcionId String      @map("suscripcion_id")
+  suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id])
+  monto         Float
+  moneda        String      @default("CLP")
+  estado        EstadoPago  @default(PENDIENTE)
+  metodoPago    MetodoPago  @map("metodo_pago")
+  referencia    String?
+  notas         String?
+  fechaPago     DateTime?   @map("fecha_pago")
+  createdAt     DateTime    @default(now())
+}
+
+model LogSuspension {
+  id           String   @id @default(cuid())
+  clienteId    String   @map("cliente_id")
+  accion       String
+  motivo       String
+  realizadoPor String   @map("realizado_por")
+  createdAt    DateTime @default(now())
+}
