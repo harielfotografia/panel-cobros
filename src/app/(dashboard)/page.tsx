@@ -45,7 +45,7 @@ export default async function ResumenPage() {
 
       {vencenProximo.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-400 mb-3">Vencen en los próximos 7 días</h3>
+          <h3 className="text-sm font-medium text-gray-600 mb-3">Vencen en los próximos 7 días</h3>
           <div className="space-y-2">
             {vencenProximo.map((s) => {
               const dias = Math.ceil(
@@ -55,13 +55,13 @@ export default async function ResumenPage() {
                 <Link
                   key={s.id}
                   href={`/clientes/${s.clienteId}`}
-                  className="flex items-center justify-between bg-gray-900 rounded-lg px-4 py-3 border border-yellow-800/40 hover:border-yellow-600/60 transition-colors"
+                  className="flex items-center justify-between bg-yellow-50 rounded-lg px-4 py-3 border border-yellow-200 hover:border-yellow-400 transition-colors"
                 >
                   <div>
                     <p className="text-sm font-medium">{s.cliente.nombre}</p>
-                    <p className="text-xs text-gray-500">{s.cliente.dominio}</p>
+                    <p className="text-xs text-gray-400">{s.cliente.dominio}</p>
                   </div>
-                  <span className="text-xs text-yellow-400 font-medium">
+                  <span className="text-xs text-yellow-600 font-medium">
                     {dias === 0 ? "Hoy" : `${dias}d`}
                   </span>
                 </Link>
@@ -74,8 +74,8 @@ export default async function ResumenPage() {
       {anuncios.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-400">Anuncios activos</h3>
-            <Link href="/anuncios" className="text-xs text-indigo-400 hover:text-indigo-300">
+            <h3 className="text-sm font-medium text-gray-600">Anuncios activos</h3>
+            <Link href="/anuncios" className="text-xs text-indigo-600 hover:text-indigo-500">
               Gestionar →
             </Link>
           </div>
@@ -99,12 +99,12 @@ export default async function ResumenPage() {
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   const colors: Record<string, string> = {
-    indigo: "text-indigo-400",
-    green: "text-green-400",
-    red: "text-red-400",
+    indigo: "text-indigo-600",
+    green: "text-green-600",
+    red: "text-red-600",
   };
   return (
-    <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+    <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className={`text-3xl font-bold ${colors[color]}`}>{value}</p>
     </div>

@@ -4,9 +4,9 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const ESTADO_BADGE: Record<string, string> = {
-  ACTIVO: "bg-green-900/50 text-green-400",
-  SUSPENDIDO: "bg-red-900/50 text-red-400",
-  CANCELADO: "bg-gray-800 text-gray-500",
+  ACTIVO: "bg-green-100 text-green-700",
+  SUSPENDIDO: "bg-red-100 text-red-700",
+  CANCELADO: "bg-gray-100 text-gray-500",
 };
 
 export default async function ClientesPage() {
@@ -33,10 +33,10 @@ export default async function ClientesPage() {
         </Link>
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-800 text-gray-500 text-xs">
+            <tr className="border-b border-gray-200 text-gray-500 text-xs">
               <th className="text-left px-4 py-3">Cliente</th>
               <th className="text-left px-4 py-3">Dominio</th>
               <th className="text-left px-4 py-3">Estado</th>
@@ -50,12 +50,12 @@ export default async function ClientesPage() {
               const vence = sub ? new Date(sub.fechaVencimiento) : null;
               const vencida = vence && vence < new Date();
               return (
-                <tr key={c.id} className="border-b border-gray-800/50 last:border-0 hover:bg-gray-800/30">
+                <tr key={c.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <p className="font-medium">{c.nombre}</p>
                     <p className="text-xs text-gray-500">{c.email}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-400">{c.dominio}</td>
+                  <td className="px-4 py-3 text-gray-500">{c.dominio}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${ESTADO_BADGE[c.estado]}`}>
                       {c.estado}
@@ -63,7 +63,7 @@ export default async function ClientesPage() {
                   </td>
                   <td className="px-4 py-3">
                     {vence ? (
-                      <span className={vencida ? "text-red-400" : "text-gray-400"}>
+                      <span className={vencida ? "text-red-600" : "text-gray-500"}>
                         {vence.toLocaleDateString("es-CL")}
                       </span>
                     ) : (
@@ -71,7 +71,7 @@ export default async function ClientesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/clientes/${c.id}`} className="text-indigo-400 hover:text-indigo-300 text-xs">
+                    <Link href={`/clientes/${c.id}`} className="text-indigo-600 hover:text-indigo-500 text-xs">
                       Ver →
                     </Link>
                   </td>

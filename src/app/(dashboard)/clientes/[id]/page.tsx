@@ -59,8 +59,8 @@ export default function ClienteDetailPage() {
     setActionLoading("");
   }
 
-  if (loading) return <p className="text-gray-500">Cargando...</p>;
-  if (!cliente) return <p className="text-red-400">Cliente no encontrado</p>;
+  if (loading) return <p className="text-gray-400">Cargando...</p>;
+  if (!cliente) return <p className="text-red-600">Cliente no encontrado</p>;
 
   const sub = cliente.suscripciones[0];
   const vence = sub ? new Date(sub.fechaVencimiento) : null;
@@ -70,14 +70,22 @@ export default function ClienteDetailPage() {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-semibold">{cliente.nombre}</h2>
-          <p className="text-sm text-gray-400">{cliente.email} · {cliente.dominio}</p>
+          <p className="text-sm text-gray-600">{cliente.email} · {cliente.dominio}</p>
         </div>
         <div className="flex gap-2">
+          <form action={`/api/clientes/${id}/impersonar`} method="POST" target="_blank">
+            <button
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+            >
+              Ver portal
+            </button>
+          </form>
           {cliente.estado === "ACTIVO" ? (
             <button
               onClick={() => accion("suspender")}
               disabled={!!actionLoading}
-              className="bg-red-900/50 hover:bg-red-800/60 text-red-400 text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              className="bg-red-100 hover:bg-red-200 text-red-600 text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               {actionLoading === "suspender" ? "..." : "Suspender"}
             </button>
@@ -85,7 +93,7 @@ export default function ClienteDetailPage() {
             <button
               onClick={() => accion("activar")}
               disabled={!!actionLoading}
-              className="bg-green-900/50 hover:bg-green-800/60 text-green-400 text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              className="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               {actionLoading === "activar" ? "..." : "Activar"}
             </button>
@@ -94,66 +102,66 @@ export default function ClienteDetailPage() {
       </div>
 
       {/* Plan y conexión */}
-      <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-3">
-        <h3 className="text-sm font-medium text-gray-400">Plan y conexión</h3>
+      <div className="bg-white rounded-xl p-5 border border-gray-200 space-y-3">
+        <h3 className="text-sm font-medium text-gray-600">Plan y conexión</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-500 text-xs">Plan</p>
+            <p className="text-gray-400 text-xs">Plan</p>
             <p className="font-medium">{cliente.plan ? `${cliente.plan.nombre} (${cliente.plan.clave})` : "Sin plan"}</p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Máx. profesionales</p>
+            <p className="text-gray-400 text-xs">Máx. profesionales</p>
             <p className="font-medium">{cliente.plan ? (cliente.plan.maxProfesionales === 0 ? "Ilimitado" : cliente.plan.maxProfesionales) : "—"}</p>
           </div>
           <div className="col-span-2">
-            <p className="text-gray-500 text-xs">API URL</p>
-            <p className="font-mono text-xs text-gray-300">{cliente.apiUrl || "No configurada"}</p>
+            <p className="text-gray-400 text-xs">API URL</p>
+            <p className="font-mono text-xs text-gray-700">{cliente.apiUrl || "No configurada"}</p>
           </div>
           <div className="col-span-2">
-            <p className="text-gray-500 text-xs">Service Key</p>
-            <p className="font-mono text-xs text-gray-300 break-all select-all">{cliente.serviceKey}</p>
+            <p className="text-gray-400 text-xs">Service Key</p>
+            <p className="font-mono text-xs text-gray-700 break-all select-all">{cliente.serviceKey}</p>
           </div>
         </div>
       </div>
 
       {/* Suscripción */}
       {sub && (
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-3">
-          <h3 className="text-sm font-medium text-gray-400">Suscripción activa</h3>
+        <div className="bg-white rounded-xl p-5 border border-gray-200 space-y-3">
+          <h3 className="text-sm font-medium text-gray-600">Suscripción activa</h3>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-gray-500 text-xs">Monto</p>
+              <p className="text-gray-400 text-xs">Monto</p>
               <p className="font-medium">{sub.monto.toLocaleString("es-CL")} {sub.moneda}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs">Vencimiento</p>
-              <p className={`font-medium ${vence && vence < new Date() ? "text-red-400" : ""}`}>
+              <p className="text-gray-400 text-xs">Vencimiento</p>
+              <p className={`font-medium ${vence && vence < new Date() ? "text-red-600" : ""}`}>
                 {vence?.toLocaleDateString("es-CL") ?? "—"}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs">Método</p>
+              <p className="text-gray-400 text-xs">Método</p>
               <p className="font-medium">{sub.metodoPago}</p>
             </div>
           </div>
 
           {/* Confirmar pago manual */}
           {sub.metodoPago === "TRANSFERENCIA" && (
-            <div className="border-t border-gray-800 pt-3 space-y-2">
-              <p className="text-xs text-gray-500">Confirmar pago por transferencia</p>
+            <div className="border-t border-gray-200 pt-3 space-y-2">
+              <p className="text-xs text-gray-400">Confirmar pago por transferencia</p>
               <div className="flex gap-2">
                 <input
                   placeholder="Monto"
                   type="number"
                   value={pagoMonto}
                   onChange={(e) => { setPagoMonto(e.target.value); setSubIdPago(sub.id); }}
-                  className="flex-1 bg-gray-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 bg-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <input
                   placeholder="Referencia (opcional)"
                   value={pagoRef}
                   onChange={(e) => setPagoRef(e.target.value)}
-                  className="flex-1 bg-gray-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 bg-gray-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
                   onClick={confirmarPago}
@@ -170,21 +178,21 @@ export default function ClienteDetailPage() {
 
       {/* Historial de pagos */}
       {sub?.pagos.length > 0 && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-          <p className="text-sm font-medium text-gray-400 px-4 py-3 border-b border-gray-800">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <p className="text-sm font-medium text-gray-600 px-4 py-3 border-b border-gray-200">
             Historial de pagos
           </p>
           <table className="w-full text-sm">
             <tbody>
               {sub.pagos.map((p) => (
-                <tr key={p.id} className="border-b border-gray-800/50 last:border-0">
-                  <td className="px-4 py-2 text-gray-400">
+                <tr key={p.id} className="border-b border-gray-200/50 last:border-0">
+                  <td className="px-4 py-2 text-gray-600">
                     {p.fechaPago ? new Date(p.fechaPago).toLocaleDateString("es-CL") : new Date(p.createdAt).toLocaleDateString("es-CL")}
                   </td>
                   <td className="px-4 py-2 font-medium">{p.monto.toLocaleString("es-CL")}</td>
-                  <td className="px-4 py-2 text-gray-500">{p.metodoPago}</td>
+                  <td className="px-4 py-2 text-gray-400">{p.metodoPago}</td>
                   <td className="px-4 py-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.estado === "CONFIRMADO" ? "bg-green-900/50 text-green-400" : "bg-yellow-900/50 text-yellow-400"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.estado === "CONFIRMADO" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                       {p.estado}
                     </span>
                   </td>
@@ -196,7 +204,7 @@ export default function ClienteDetailPage() {
         </div>
       )}
 
-      <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-300 text-sm transition-colors">
+      <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-700 text-sm transition-colors">
         ← Volver
       </button>
     </div>

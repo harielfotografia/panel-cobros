@@ -18,40 +18,35 @@ export default async function FacturasPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Facturas</h1>
-        <Link href="/portal" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
-          ← Volver
-        </Link>
-      </div>
+    <div className="space-y-4 max-w-3xl">
+      <h1 className="text-xl font-bold text-gray-900">Facturas</h1>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-800 text-gray-500 text-xs">
-              <th className="text-left px-4 py-3">Fecha</th>
-              <th className="text-left px-4 py-3">Monto</th>
-              <th className="text-left px-4 py-3">Método</th>
-              <th className="text-right px-4 py-3">Comprobante</th>
+            <tr className="border-b border-gray-100 text-gray-400 text-xs">
+              <th className="text-left px-5 py-3">Fecha</th>
+              <th className="text-left px-5 py-3">Monto</th>
+              <th className="text-left px-5 py-3">Método</th>
+              <th className="text-right px-5 py-3">Comprobante</th>
             </tr>
           </thead>
           <tbody>
             {pagos.map((p) => (
-              <tr key={p.id} className="border-b border-gray-800/50 last:border-0">
-                <td className="px-4 py-3 text-gray-400">
+              <tr key={p.id} className="border-b border-gray-50 last:border-0">
+                <td className="px-5 py-3 text-gray-500">
                   {(p.fechaPago ?? p.createdAt).toLocaleDateString("es-CL")}
                 </td>
-                <td className="px-4 py-3 font-medium">
+                <td className="px-5 py-3 font-semibold text-gray-900">
                   ${p.monto.toLocaleString("es-CL")} {p.moneda}
                 </td>
-                <td className="px-4 py-3 text-gray-400">{p.metodoPago}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-5 py-3 text-gray-500">{p.metodoPago}</td>
+                <td className="px-5 py-3 text-right">
                   <a
                     href={`/api/portal/factura/${p.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-indigo-400 hover:text-indigo-300 text-xs transition-colors"
+                    className="text-blue-600 hover:text-blue-500 text-xs font-medium transition-colors"
                   >
                     Descargar PDF
                   </a>
@@ -61,7 +56,7 @@ export default async function FacturasPage() {
           </tbody>
         </table>
         {pagos.length === 0 && (
-          <p className="text-center text-gray-600 py-10">Aún no tienes facturas</p>
+          <p className="text-center text-gray-400 py-10">Aún no tienes facturas</p>
         )}
       </div>
     </div>

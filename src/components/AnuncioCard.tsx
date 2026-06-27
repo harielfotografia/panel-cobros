@@ -17,8 +17,8 @@ export function AnuncioCard({ titulo, mensaje, tipo, fecha, destino }: Props) {
         <span className={`text-xs font-medium ${e.texto}`}>{e.etiqueta}</span>
         {destino && <span className="text-xs text-gray-500">{destino}</span>}
       </div>
-      <p className="font-medium text-sm text-gray-100">{titulo}</p>
-      <p className="text-sm text-gray-400 mt-1">{mensaje}</p>
+      <p className="font-medium text-sm text-gray-900">{titulo}</p>
+      <p className="text-sm text-gray-600 mt-1">{mensaje}</p>
       {fecha && (
         <p className="text-xs text-gray-600 mt-2">{fecha.toLocaleDateString("es-CL")}</p>
       )}

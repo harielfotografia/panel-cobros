@@ -21,10 +21,10 @@ const TIPOS = [
 ];
 
 const COLOR: Record<string, string> = {
-  INFO: "text-blue-300",
-  EXITO: "text-green-300",
-  ADVERTENCIA: "text-yellow-300",
-  MANTENIMIENTO: "text-indigo-300",
+  INFO: "text-blue-600",
+  EXITO: "text-green-600",
+  ADVERTENCIA: "text-yellow-600",
+  MANTENIMIENTO: "text-indigo-600",
 };
 
 export default function AnunciosPage() {
@@ -77,14 +77,14 @@ export default function AnunciosPage() {
       <h2 className="text-xl font-semibold">Anuncios</h2>
 
       {/* Crear */}
-      <form onSubmit={crear} className="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-3">
-        <p className="text-sm font-medium text-gray-300">Nuevo anuncio</p>
+      <form onSubmit={crear} className="bg-white rounded-xl p-5 border border-gray-200 space-y-3">
+        <p className="text-sm font-medium text-gray-700">Nuevo anuncio</p>
         <input
           placeholder="Título"
           value={form.titulo}
           onChange={(e) => setForm({ ...form, titulo: e.target.value })}
           required
-          className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
         <textarea
           placeholder="Mensaje"
@@ -92,13 +92,13 @@ export default function AnunciosPage() {
           onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
           required
           rows={2}
-          className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
         <div className="grid grid-cols-2 gap-3">
           <select
             value={form.tipo}
             onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-            className="bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {TIPOS.map((t) => (
               <option key={t.v} value={t.v}>
@@ -109,7 +109,7 @@ export default function AnunciosPage() {
           <select
             value={form.clienteId}
             onChange={(e) => setForm({ ...form, clienteId: e.target.value })}
-            className="bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">Todos los clientes (global)</option>
             {clientes.map((c) => (
@@ -133,7 +133,7 @@ export default function AnunciosPage() {
         {anuncios.map((a) => (
           <div
             key={a.id}
-            className={`bg-gray-900 rounded-xl p-4 border border-gray-800 ${a.activo ? "" : "opacity-50"}`}
+            className={`bg-white rounded-xl p-4 border border-gray-200 ${a.activo ? "" : "opacity-50"}`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -141,7 +141,7 @@ export default function AnunciosPage() {
                   <span className={`text-xs font-medium ${COLOR[a.tipo]}`}>
                     {TIPOS.find((t) => t.v === a.tipo)?.t}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-400">
                     {a.cliente ? a.cliente.nombre : "Global"}
                   </span>
                 </div>
@@ -149,10 +149,10 @@ export default function AnunciosPage() {
                 <p className="text-sm text-gray-400">{a.mensaje}</p>
               </div>
               <div className="flex gap-3 text-xs ml-4">
-                <button onClick={() => toggle(a)} className="text-gray-400 hover:text-gray-200">
+                <button onClick={() => toggle(a)} className="text-gray-400 hover:text-gray-900">
                   {a.activo ? "Ocultar" : "Mostrar"}
                 </button>
-                <button onClick={() => eliminar(a.id)} className="text-red-400 hover:text-red-300">
+                <button onClick={() => eliminar(a.id)} className="text-red-500 hover:text-red-600">
                   Eliminar
                 </button>
               </div>

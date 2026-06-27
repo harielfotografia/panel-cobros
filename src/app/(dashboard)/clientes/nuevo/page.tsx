@@ -63,7 +63,7 @@ export default function NuevoClientePage() {
   return (
     <div className="max-w-lg">
       <h2 className="text-xl font-semibold mb-6">Nuevo cliente</h2>
-      <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-6 border border-gray-800 space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 border border-gray-200 space-y-4">
         <Field label="Nombre" value={form.nombre} onChange={(v) => set("nombre", v)} required />
         <Field label="Email" type="email" value={form.email} onChange={(v) => set("email", v)} required />
         <Field label="Teléfono" value={form.telefono} onChange={(v) => set("telefono", v)} />
@@ -71,11 +71,11 @@ export default function NuevoClientePage() {
         <Field label="URL API clínica (ej: https://clinica.com/wp-json/dental-ora/v1)" value={form.apiUrl} onChange={(v) => set("apiUrl", v)} />
         <Field label="Coolify App ID (opcional)" value={form.coolifyAppId} onChange={(v) => set("coolifyAppId", v)} />
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Plan</label>
+          <label className="block text-sm text-gray-600 mb-1">Plan</label>
           <select
             value={form.planId}
             onChange={(e) => set("planId", e.target.value)}
-            className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">Sin plan asignado</option>
             {planes.map(p => (
@@ -85,11 +85,11 @@ export default function NuevoClientePage() {
         </div>
         <Field label="Monto mensual (CLP)" type="number" value={form.monto} onChange={(v) => set("monto", v)} required />
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Método de pago</label>
+          <label className="block text-sm text-gray-600 mb-1">Método de pago</label>
           <select
             value={form.metodoPago}
             onChange={(e) => set("metodoPago", e.target.value)}
-            className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="TRANSFERENCIA">Transferencia</option>
             <option value="MERCADOPAGO">MercadoPago</option>
@@ -97,9 +97,9 @@ export default function NuevoClientePage() {
           </select>
         </div>
         <Field label="Días de gracia" type="number" value={form.diasGracia} onChange={(v) => set("diasGracia", v)} />
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-red-600 text-sm">{error}</p>}
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={() => router.back()} className="flex-1 bg-gray-800 hover:bg-gray-700 rounded-lg py-2 text-sm transition-colors">
+          <button type="button" onClick={() => router.back()} className="flex-1 bg-gray-100 hover:bg-gray-200 rounded-lg py-2 text-sm transition-colors">
             Cancelar
           </button>
           <button type="submit" disabled={loading} className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg py-2 text-sm font-medium transition-colors">
@@ -116,13 +116,13 @@ function Field({ label, value, onChange, type = "text", required = false }: {
 }) {
   return (
     <div>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
+      <label className="block text-sm text-gray-600 mb-1">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
     </div>
   );

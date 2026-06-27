@@ -1,6 +1,9 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { Home } from "lucide-react";
+
+const EMPRESA = process.env.NEXT_PUBLIC_EMPRESA_NOMBRE || "DentalCloud";
 
 function LoginForm() {
   const params = useSearchParams();
@@ -26,47 +29,54 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <h1 className="text-2xl font-bold text-center mb-2">Portal del cliente</h1>
+      <div className="flex items-center justify-center gap-3 mb-2">
+        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+          <Home size={20} className="text-white" />
+        </div>
+      </div>
+      <h1 className="text-2xl font-bold text-center text-gray-900 mb-1">Portal del Cliente</h1>
       <p className="text-sm text-gray-400 text-center mb-8">Te enviamos un enlace de acceso a tu correo</p>
 
       {errorParam && (
-        <p className="text-yellow-400 text-sm text-center mb-4 bg-yellow-900/20 rounded-lg py-2">
+        <p className="text-orange-700 text-sm text-center mb-4 bg-orange-50 border border-orange-200 rounded-xl py-2">
           {errorParam === "expirado" ? "El enlace expiró. Solicita uno nuevo." : "Enlace inválido."}
         </p>
       )}
 
       {enviado ? (
-        <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 text-center">
-          <div className="text-green-400 text-4xl mb-3">✓</div>
-          <p className="text-sm text-gray-300">
-            Si <strong>{email}</strong> está registrado, recibirás un enlace de acceso en unos segundos.
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 text-center">
+          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <span className="text-green-600 text-2xl">✓</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            Si <strong className="text-gray-900">{email}</strong> está registrado, recibirás un enlace de acceso en unos segundos.
           </p>
           {devLink && (
-            <div className="mt-4 pt-4 border-t border-gray-800">
-              <p className="text-xs text-gray-500 mb-2">Modo desarrollo — tu enlace:</p>
-              <a href={devLink} className="text-indigo-400 text-xs break-all hover:underline">
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-2">Modo desarrollo — tu enlace:</p>
+              <a href={devLink} className="text-blue-600 text-xs break-all hover:underline">
                 {devLink}
               </a>
             </div>
           )}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-8 space-y-4 border border-gray-800">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 space-y-4 border border-gray-200">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Tu correo electrónico</label>
+            <label className="block text-sm text-gray-600 mb-1">Tu correo electrónico</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@empresa.cl"
-              className="w-full bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg py-2 text-sm font-medium transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
           >
             {loading ? "Enviando..." : "Enviar enlace de acceso"}
           </button>
@@ -78,8 +88,8 @@ function LoginForm() {
 
 export default function PortalLoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <Suspense fallback={<p className="text-gray-500">Cargando...</p>}>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
+      <Suspense fallback={<p className="text-gray-400">Cargando...</p>}>
         <LoginForm />
       </Suspense>
     </div>

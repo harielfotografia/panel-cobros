@@ -18,27 +18,27 @@ export const ESTILO_ANUNCIO: Record<
   { borde: string; fondo: string; texto: string; etiqueta: string }
 > = {
   INFO: {
-    borde: "border-blue-800/40",
-    fondo: "bg-blue-950/30",
-    texto: "text-blue-300",
+    borde: "border-blue-200",
+    fondo: "bg-blue-50",
+    texto: "text-blue-600",
     etiqueta: "Información",
   },
   ADVERTENCIA: {
-    borde: "border-yellow-800/40",
-    fondo: "bg-yellow-950/30",
-    texto: "text-yellow-300",
+    borde: "border-yellow-200",
+    fondo: "bg-yellow-50",
+    texto: "text-yellow-600",
     etiqueta: "Atención",
   },
   EXITO: {
-    borde: "border-green-800/40",
-    fondo: "bg-green-950/30",
-    texto: "text-green-300",
+    borde: "border-green-200",
+    fondo: "bg-green-50",
+    texto: "text-green-600",
     etiqueta: "Novedad",
   },
   MANTENIMIENTO: {
-    borde: "border-indigo-800/40",
-    fondo: "bg-indigo-950/30",
-    texto: "text-indigo-300",
+    borde: "border-indigo-200",
+    fondo: "bg-indigo-50",
+    texto: "text-indigo-600",
     etiqueta: "Mantenimiento",
   },
 };
