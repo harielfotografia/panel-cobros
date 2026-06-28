@@ -1,8 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { anunciosParaCliente } from "@/lib/anuncios";
+import type { ComponentType } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -72,13 +73,13 @@ export default async function PortalDashboard() {
     INFO: { bg: "bg-blue-100", text: "text-blue-600" },
     EXITO: { bg: "bg-green-100", text: "text-green-600" },
     ADVERTENCIA: { bg: "bg-orange-100", text: "text-orange-600" },
-    MANTENIMIENTO: { bg: "bg-indigo-100", text: "text-indigo-600" },
+    MANTENIMIENTO: { bg: "bg-blue-100", text: "text-blue-600" },
   };
   const TIPO_BADGE: Record<string, string> = {
     INFO: "bg-blue-100 text-blue-700",
     EXITO: "bg-green-100 text-green-700",
     ADVERTENCIA: "bg-orange-100 text-orange-700",
-    MANTENIMIENTO: "bg-indigo-100 text-indigo-700",
+    MANTENIMIENTO: "bg-blue-100 text-blue-700",
   };
   const TIPO_LABEL: Record<string, string> = {
     INFO: "Información",
@@ -222,9 +223,9 @@ export default async function PortalDashboard() {
         <QuickAction
           href={soporteUrl}
           icon={Headphones}
-          iconBg="bg-indigo-100"
-          iconColor="text-indigo-600"
-          borderColor="border-indigo-200"
+          iconBg="bg-blue-100"
+          iconColor="text-blue-600"
+          borderColor="border-blue-200"
           title="Soporte"
           desc="¿Tienes dudas? Estamos para ayudarte."
           external
@@ -344,7 +345,7 @@ function QuickAction({
   external,
 }: {
   href: string;
-  icon: LucideIcon;
+  icon: ComponentType<{ size?: number; className?: string }>;
   iconBg: string;
   iconColor: string;
   borderColor: string;
@@ -415,7 +416,7 @@ function StatusCard({
   sub,
   color,
 }: {
-  icon: LucideIcon;
+  icon: ComponentType<{ size?: number; className?: string }>;
   label: string;
   value: string;
   sub: string;
@@ -424,7 +425,7 @@ function StatusCard({
   const colors: Record<string, string> = {
     blue: "bg-blue-50 text-blue-600",
     green: "bg-green-50 text-green-600",
-    indigo: "bg-indigo-50 text-indigo-600",
+    indigo: "bg-blue-50 text-blue-600",
   };
   const c = colors[color] ?? colors.blue;
   return (
