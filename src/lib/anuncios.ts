@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import type { TipoAnuncio } from "@prisma/client";
 
 // Anuncios activos visibles para un cliente: los suyos + los globales.
@@ -36,9 +36,9 @@ export const ESTILO_ANUNCIO: Record<
     etiqueta: "Novedad",
   },
   MANTENIMIENTO: {
-    borde: "border-indigo-200",
-    fondo: "bg-indigo-50",
-    texto: "text-indigo-600",
+    borde: "border-blue-200",
+    fondo: "bg-blue-50",
+    texto: "text-blue-600",
     etiqueta: "Mantenimiento",
   },
 };

@@ -12,10 +12,8 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     const cliente = await prisma.cliente.findUnique({ where: { id } });
     if (!cliente) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-    if (cliente.apiUrl && cliente.serviceKey) {
-      await clinicApi.setEstado(cliente.apiUrl, cliente.serviceKey, "activa").catch((err) => {
-        console.error(`[activar] clinicApi falló para ${cliente.nombre}:`, err);
-      });
+    if (cliente.apiUrl) {
+      await clinicApi.setEstado(cliente.id, cliente.apiUrl, cliente.serviceKey, "activa");
     }
 
     await prisma.cliente.update({

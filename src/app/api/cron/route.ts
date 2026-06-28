@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { clinicApi } from "@/lib/clinic-api";
 import { enviarAvisoVencimiento, enviarAvisoSuspension } from "@/lib/email";
 
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret");
   if (secret !== process.env.CRON_SECRET) {
@@ -35,8 +36,8 @@ export async function POST(req: NextRequest) {
 
     if (hoy > limiteConGracia && cliente.estado === "ACTIVO") {
       try {
-        if (cliente.apiUrl && cliente.serviceKey) {
-          await clinicApi.setEstado(cliente.apiUrl, cliente.serviceKey, "suspendida");
+        if (cliente.apiUrl) {
+          await clinicApi.setEstado(cliente.id, cliente.apiUrl, cliente.serviceKey, "suspendida");
         }
         await prisma.cliente.update({
           where: { id: cliente.id },
@@ -62,5 +63,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json(resultados);
+  // Reintentar clientes con syncPending (clinic-api falló antes)
+  const syncResultados = await clinicApi.retrySyncPending();
+
+  return NextResponse.json({ ...resultados, syncRetry: syncResultados });
 }

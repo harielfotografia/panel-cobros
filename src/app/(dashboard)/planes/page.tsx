@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 
 interface Plan {
@@ -57,7 +57,7 @@ export default function PlanesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Desactivar este plan?")) return;
+    if (!confirm("Â¿Desactivar este plan?")) return;
     await fetch(`/api/planes/${id}`, { method: "DELETE" });
     load();
   }
@@ -65,10 +65,10 @@ export default function PlanesPage() {
   if (loading) return <p className="text-gray-400">Cargando planes...</p>;
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 lg:p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Planes</h2>
-        <button onClick={() => { resetForm(); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-500 text-sm px-4 py-2 rounded-lg transition-colors">
+        <h2 className="text-lg lg:text-xl font-bold text-gray-900">Planes</h2>
+        <button onClick={() => { resetForm(); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-500 text-sm px-4 py-2 rounded-lg transition-colors">
           + Nuevo plan
         </button>
       </div>
@@ -79,12 +79,12 @@ export default function PlanesPage() {
             <Field label="Clave (ej: BASICO)" value={form.clave} onChange={(v) => setForm(f => ({ ...f, clave: v }))} required />
             <Field label="Nombre" value={form.nombre} onChange={(v) => setForm(f => ({ ...f, nombre: v }))} required />
             <Field label="Precio (CLP)" type="number" value={form.precio} onChange={(v) => setForm(f => ({ ...f, precio: v }))} required />
-            <Field label="Máx. profesionales (0=ilimitado)" type="number" value={form.maxProfesionales} onChange={(v) => setForm(f => ({ ...f, maxProfesionales: v }))} />
+            <Field label="MÃ¡x. profesionales (0=ilimitado)" type="number" value={form.maxProfesionales} onChange={(v) => setForm(f => ({ ...f, maxProfesionales: v }))} />
           </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={resetForm} className="bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 text-sm transition-colors">Cancelar</button>
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 rounded-lg px-4 py-2 text-sm font-medium transition-colors">
+            <button type="submit" className="bg-blue-600 hover:bg-blue-500 rounded-lg px-4 py-2 text-sm font-medium transition-colors">
               {editingId ? "Guardar" : "Crear plan"}
             </button>
           </div>
@@ -98,7 +98,7 @@ export default function PlanesPage() {
               <th className="text-left px-4 py-3">Clave</th>
               <th className="text-left px-4 py-3">Nombre</th>
               <th className="text-right px-4 py-3">Precio</th>
-              <th className="text-right px-4 py-3">Máx. Prof.</th>
+              <th className="text-right px-4 py-3">MÃ¡x. Prof.</th>
               <th className="text-right px-4 py-3">Clientes</th>
               <th className="text-right px-4 py-3">Estado</th>
               <th className="text-right px-4 py-3"></th>
@@ -110,7 +110,7 @@ export default function PlanesPage() {
                 <td className="px-4 py-3 font-mono text-xs">{p.clave}</td>
                 <td className="px-4 py-3">{p.nombre}</td>
                 <td className="px-4 py-3 text-right">${p.precio.toLocaleString("es-CL")}</td>
-                <td className="px-4 py-3 text-right">{p.maxProfesionales === 0 ? "∞" : p.maxProfesionales}</td>
+                <td className="px-4 py-3 text-right">{p.maxProfesionales === 0 ? "âˆž" : p.maxProfesionales}</td>
                 <td className="px-4 py-3 text-right text-gray-600">{p._count?.clientes ?? 0}</td>
                 <td className="px-4 py-3 text-right">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${p.activo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
@@ -140,7 +140,8 @@ function Field({ label, value, onChange, type = "text", required = false }: {
     <div>
       <label className="block text-sm text-gray-600 mb-1">{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required}
-        className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900" />
+        className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900" />
     </div>
   );
 }
+

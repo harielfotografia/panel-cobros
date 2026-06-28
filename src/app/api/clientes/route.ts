@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
     const body = await req.json();
-    const { nombre, email, telefono, dominio, coolifyAppId, apiUrl, planId, monto, metodoPago, diasGracia } = body;
+    const { nombre, email, telefono, rut, dominio, coolifyAppId, apiUrl, planId, vendedoraId, monto, metodoPago, diasGracia } = body;
 
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
 
@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
         nombre,
         email,
         telefono,
+        rut: rut || undefined,
+        vendedoraId: vendedoraId || undefined,
         dominio,
         coolifyAppId: coolifyAppId || undefined,
         serviceKey: generateServiceKey(),

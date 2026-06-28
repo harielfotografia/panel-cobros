@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 
 type Cliente = { id: string; nombre: string };
@@ -24,7 +24,7 @@ const COLOR: Record<string, string> = {
   INFO: "text-blue-600",
   EXITO: "text-green-600",
   ADVERTENCIA: "text-yellow-600",
-  MANTENIMIENTO: "text-indigo-600",
+  MANTENIMIENTO: "text-blue-600",
 };
 
 export default function AnunciosPage() {
@@ -73,7 +73,7 @@ export default function AnunciosPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 max-w-3xl">
       <h2 className="text-xl font-semibold">Anuncios</h2>
 
       {/* Crear */}
@@ -84,7 +84,7 @@ export default function AnunciosPage() {
           value={form.titulo}
           onChange={(e) => setForm({ ...form, titulo: e.target.value })}
           required
-          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <textarea
           placeholder="Mensaje"
@@ -92,13 +92,13 @@ export default function AnunciosPage() {
           onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
           required
           rows={2}
-          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <div className="grid grid-cols-2 gap-3">
           <select
             value={form.tipo}
             onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {TIPOS.map((t) => (
               <option key={t.v} value={t.v}>
@@ -109,7 +109,7 @@ export default function AnunciosPage() {
           <select
             value={form.clienteId}
             onChange={(e) => setForm({ ...form, clienteId: e.target.value })}
-            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Todos los clientes (global)</option>
             {clientes.map((c) => (
@@ -122,7 +122,7 @@ export default function AnunciosPage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
         >
           {loading ? "Publicando..." : "Publicar anuncio"}
         </button>

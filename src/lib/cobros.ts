@@ -49,25 +49,19 @@ export async function registrarPagoConfirmado(opts: RegistrarPagoOpts) {
     },
   });
 
-  let reactivado = false;
   const cliente = suscripcion.cliente;
+  let reactivado = false;
 
   if (cliente.estado === "SUSPENDIDO") {
-    if (cliente.apiUrl && cliente.serviceKey) {
-      await clinicApi.setEstado(cliente.apiUrl, cliente.serviceKey, "activa").catch((err) => {
-        console.error(`[cobros] clinicApi.setEstado falló para ${cliente.nombre}:`, err);
-      });
+    if (cliente.apiUrl) {
+      await clinicApi.setEstado(cliente.id, cliente.apiUrl, cliente.serviceKey, "activa");
     }
-
-    await prisma.cliente.update({
-      where: { id: suscripcion.clienteId },
-      data: { estado: "ACTIVO" },
-    });
+    await prisma.cliente.update({ where: { id: cliente.id }, data: { estado: "ACTIVO" } });
     reactivado = true;
 
     await prisma.logSuspension.create({
       data: {
-        clienteId: suscripcion.clienteId,
+        clienteId: cliente.id,
         accion: "REACTIVADO",
         motivo: "Pago confirmado",
         realizadoPor: opts.realizadoPor,
@@ -81,13 +75,12 @@ export async function registrarPagoConfirmado(opts: RegistrarPagoOpts) {
     }).catch(() => {});
   }
 
-  // Push plan to clinic after payment
-  if (cliente.apiUrl && cliente.serviceKey && cliente.plan) {
-    await clinicApi.pushPlan(cliente.apiUrl, cliente.serviceKey, {
+  // Push del plan a la clínica tras cada pago
+  if (cliente.apiUrl && cliente.plan) {
+    await clinicApi.pushPlan(cliente.id, cliente.apiUrl, cliente.serviceKey, {
       nombre: cliente.plan.nombre,
       maxProfesionales: cliente.plan.maxProfesionales,
-    }).catch((err) => {
-      console.error(`[cobros] pushPlan falló para ${cliente.nombre}:`, err);
+      modulos: cliente.plan.modulos,
     });
   }
 

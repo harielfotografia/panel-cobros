@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { anunciosParaCliente } from "@/lib/anuncios";
 import { Megaphone } from "lucide-react";
@@ -9,7 +9,7 @@ const TIPO_BADGE: Record<string, string> = {
   INFO: "bg-blue-100 text-blue-700",
   EXITO: "bg-green-100 text-green-700",
   ADVERTENCIA: "bg-orange-100 text-orange-700",
-  MANTENIMIENTO: "bg-indigo-100 text-indigo-700",
+  MANTENIMIENTO: "bg-blue-100 text-blue-700",
 };
 const TIPO_LABEL: Record<string, string> = {
   INFO: "Información",

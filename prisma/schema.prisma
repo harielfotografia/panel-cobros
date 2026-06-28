@@ -36,11 +36,28 @@ enum TipoAnuncio {
   MANTENIMIENTO
 }
 
+enum RolAdmin {
+  ADMIN
+  CONTADOR
+}
+
+model Vendedora {
+  id          String    @id @default(cuid())
+  nombre      String
+  email       String?   @unique
+  telefono    String?
+  comisionPct Float?    @map("comision_pct") // null = usa el global de Configuracion
+  activa      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  clientes    Cliente[]
+}
+
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   nombre    String
+  rol       RolAdmin @default(ADMIN)
   createdAt DateTime @default(now())
 }
 
@@ -70,6 +87,10 @@ model Cliente {
   apiUrl         String?       @map("api_url")
   planId         String?       @map("plan_id")
   plan           Plan?         @relation(fields: [planId], references: [id])
+  rut            String?
+  vendedoraId    String?       @map("vendedora_id")
+  vendedora      Vendedora?    @relation(fields: [vendedoraId], references: [id])
+  syncPending    Boolean       @default(false) @map("sync_pending")
   estado         EstadoCliente @default(ACTIVO)
   notas          String?
   createdAt      DateTime      @default(now())
@@ -77,6 +98,9 @@ model Cliente {
   suscripciones  Suscripcion[]
   magicLinks     MagicLink[]
   anuncios       Anuncio[]
+  cotizaciones   Cotizacion[]
+  facturas       Factura[]
+  boletas        Boleta[]
 }
 
 model Anuncio {
@@ -135,6 +159,118 @@ model Pago {
   notas         String?
   fechaPago     DateTime?   @map("fecha_pago")
   createdAt     DateTime    @default(now())
+}
+
+// ── Documentos comerciales ──────────────────────────────────────────────────
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  APROBADA
+  RECHAZADA
+  FACTURADA
+  CONVERTIDA_BOLETA
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  PAGADA
+  VENCIDA
+  ANULADA
+}
+
+enum EstadoBoleta {
+  PENDIENTE
+  PAGADA
+  ANULADA
+}
+
+// Contador atómico para numeración correlativa
+model DocumentoContador {
+  id       String @id           // "cotizacion" | "factura" | "boleta"
+  contador Int    @default(1)
+}
+
+model Cotizacion {
+  id             String           @id @default(cuid())
+  numero         String           @unique              // "COT-000001"
+  clienteId      String?          @map("cliente_id")
+  cliente        Cliente?         @relation(fields: [clienteId], references: [id])
+  clienteNombre  String           @map("cliente_nombre")
+  clienteRut     String           @default("") @map("cliente_rut")
+  fecha          DateTime
+  vigencia       String           @default("30 días")
+  formaPago      String           @default("") @map("forma_pago")
+  atte           String           @default("")
+  comentarios    String           @default("")
+  estado         EstadoCotizacion @default(BORRADOR)
+  items          Json             @default("[]")
+  subtotal       Float            @default(0)
+  iva            Float            @default(0)
+  total          Float            @default(0)
+  deletedAt      DateTime?        @map("deleted_at")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  facturas       Factura[]
+  boletas        Boleta[]
+}
+
+model Factura {
+  id               String        @id @default(cuid())
+  numero           String        @unique              // "FAC-000001"
+  numeroSii        String        @default("") @map("numero_sii")
+  clienteId        String?       @map("cliente_id")
+  cliente          Cliente?      @relation(fields: [clienteId], references: [id])
+  clienteNombre    String        @map("cliente_nombre")
+  clienteRut       String        @default("") @map("cliente_rut")
+  cotizacionId     String?       @map("cotizacion_id")
+  cotizacion       Cotizacion?   @relation(fields: [cotizacionId], references: [id])
+  fechaEmision     DateTime      @map("fecha_emision")
+  fechaVencimiento DateTime      @map("fecha_vencimiento")
+  plazoPago        String        @default("30") @map("plazo_pago")
+  estado           EstadoFactura @default(PENDIENTE)
+  montoNeto        Float         @default(0) @map("monto_neto")
+  iva              Float         @default(0)
+  total            Float         @default(0)
+  items            Json          @default("[]")
+  notas            String        @default("")
+  adjuntos         Json          @default("[]")      // [{nombre, tipo, base64, fechaSubida}]
+  deletedAt        DateTime?     @map("deleted_at")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Boleta {
+  id            String        @id @default(cuid())
+  numero        String        @unique              // "BOL-000001"
+  numeroSii     String        @default("") @map("numero_sii")
+  clienteId     String?       @map("cliente_id")
+  cliente       Cliente?      @relation(fields: [clienteId], references: [id])
+  clienteNombre String        @map("cliente_nombre")
+  cotizacionId  String?       @map("cotizacion_id")
+  cotizacion    Cotizacion?   @relation(fields: [cotizacionId], references: [id])
+  fechaEmision  DateTime      @map("fecha_emision")
+  estado        EstadoBoleta  @default(PENDIENTE)
+  montoTotal    Float         @default(0) @map("monto_total")
+  items         Json          @default("[]")
+  notas         String        @default("")
+  adjuntos      Json          @default("[]")
+  deletedAt     DateTime?     @map("deleted_at")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ── Configuración ────────────────────────────────────────────────────────────
+// Configuración editable desde la UI (un solo registro "singleton").
+model Configuracion {
+  id               String  @id @default("config")
+  empresaNombre    String  @default("") @map("empresa_nombre")
+  empresaRut       String  @default("") @map("empresa_rut")
+  empresaDireccion String  @default("") @map("empresa_direccion")
+  soporteEmail     String  @default("") @map("soporte_email")
+  soporteWhatsApp  String  @default("") @map("soporte_whatsapp")
+  logoUrl          String  @default("") @map("logo_url")
+  comisionPct      Float   @default(10) @map("comision_pct")
 }
 
 model LogSuspension {

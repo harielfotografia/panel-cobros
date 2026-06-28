@@ -245,7 +245,86 @@ async function main() {
     ],
   });
 
-  console.log("Seed completado: 4 clínicas dentales + anuncios.");
+  // === Documentos de prueba ===
+  await prisma.documentoContador.deleteMany();
+  await prisma.boleta.deleteMany();
+  await prisma.factura.deleteMany();
+  await prisma.cotizacion.deleteMany();
+
+  // Cotización aprobada (lista para convertir)
+  const cot1 = await prisma.cotizacion.create({
+    data: {
+      numero: "COT-000001",
+      clienteId: andes.id,
+      clienteNombre: "Clínica Dental Andes",
+      clienteRut: "76.543.210-K",
+      fecha: new Date(ahora - 10 * dia),
+      vigencia: "30 días",
+      formaPago: "Crédito 30 días",
+      atte: "Gerencia",
+      comentarios: "Incluye implementación, capacitación y soporte el primer mes.",
+      estado: "APROBADA",
+      items: [
+        { descripcion: "Plan Premium mensual — Sistema de Gestión Dental", cantidad: 1, precioUnitario: 39990, descuento: 0, total: 39990 },
+        { descripcion: "Módulo WhatsApp — recordatorios automáticos", cantidad: 1, precioUnitario: 9990, descuento: 10, total: 8991 },
+      ],
+      subtotal: 48981,
+      iva: Math.round(48981 * 0.19),
+      total: 48981 + Math.round(48981 * 0.19),
+    },
+  });
+
+  // Cotización en borrador
+  await prisma.cotizacion.create({
+    data: {
+      numero: "COT-000002",
+      clienteId: odonto.id,
+      clienteNombre: "OdontoSalud Las Condes",
+      clienteRut: "77.123.456-3",
+      fecha: new Date(ahora - 3 * dia),
+      vigencia: "15 días",
+      formaPago: "Transferencia",
+      atte: "Administración",
+      comentarios: "",
+      estado: "BORRADOR",
+      items: [{ descripcion: "Plan Básico mensual — Sistema de Gestión Dental", cantidad: 1, precioUnitario: 29990, descuento: 0, total: 29990 }],
+      subtotal: 29990,
+      iva: Math.round(29990 * 0.19),
+      total: 29990 + Math.round(29990 * 0.19),
+    },
+  });
+
+  // Factura (generada desde la cotización 1)
+  await prisma.factura.create({
+    data: {
+      numero: "FAC-000001",
+      numeroSii: "000045",
+      clienteId: andes.id,
+      clienteNombre: "Clínica Dental Andes",
+      clienteRut: "76.543.210-K",
+      cotizacionId: cot1.id,
+      fechaEmision: new Date(ahora - 8 * dia),
+      fechaVencimiento: new Date(ahora + 22 * dia),
+      plazoPago: "30",
+      estado: "PENDIENTE",
+      montoNeto: cot1.subtotal,
+      iva: cot1.iva,
+      total: cot1.total,
+      items: cot1.items as never,
+      notas: "Primer mes de suscripción — Plan Premium.",
+    },
+  });
+
+  // Inicializar contadores desde donde quedamos
+  await prisma.documentoContador.createMany({
+    data: [
+      { id: "cotizacion", contador: 3 },
+      { id: "factura", contador: 2 },
+      { id: "boleta", contador: 1 },
+    ],
+  });
+
+  console.log("Seed completado: 4 clínicas dentales + anuncios + documentos de prueba.");
   console.log("");
   console.log("Admin:  admin@panel.cl / admin123");
   console.log("Portales de cliente (login por magic link con estos correos):");

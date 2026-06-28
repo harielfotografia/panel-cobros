@@ -6,7 +6,9 @@
 - Next.js 16.2 (App Router, Turbopack), React 19, TypeScript, Tailwind 4
 - Prisma 7 + PostgreSQL (driver adapter: `@prisma/adapter-pg`)
 - Auth: JWT en httpOnly cookies (`src/lib/auth.ts`)
-- Pagos: MercadoPago (`src/lib/mercadopago.ts`)
+- Pagos: MercadoPago + Transbank Webpay Plus (`transbank-sdk`)
+- Gráficos: recharts
+- PDF: pdf-lib (ya instalado)
 
 ## Arquitectura maestro ↔ clínica
 Cada clínica es una instalación WordPress + plugin `dental-ora/v1`. El maestro gestiona N clínicas.
@@ -19,75 +21,257 @@ Cada clínica es una instalación WordPress + plugin `dental-ora/v1`. El maestro
 - `PUT {apiUrl}/servicio/plan` — push del plan (header `X-Dora-Service-Key`)
 - `PUT {apiUrl}/servicio/estado` — suspender/reactivar (no Coolify stop)
 - `GET {apiUrl}/servicio/uso` — métricas de la clínica
+- Retry con backoff exponencial (3 intentos: 0ms, 1s, 4s)
+- En fallo final: `syncPending=true` en Cliente; el cron lo reintenta con `clinicApi.retrySyncPending()`
+- **Coolify NO se usa para suspensión** — la suspensión es vía plugin WordPress
 
 **Endpoints del maestro para las clínicas:**
 - `GET /api/suscripcion/estado` — plan vigente, estado (auth: serviceKey)
 - `POST /api/suscripcion/checkout` — preference_id MP para widget embebido (auth: serviceKey)
 
-## Modelos clave (Prisma)
-- `Plan` — clave (BASICO/PRO/PREMIUM), precio, maxProfesionales, modulos
-- `Cliente` — serviceKey (unique), apiUrl, planId, coolifyAppId (opcional)
-- `Suscripcion` — planId, fechaVencimiento, tipoCobro (AUTOMATICO/MANUAL)
-- `Pago`, `Admin`, `MagicLink`, `Anuncio`, `LogSuspension`
+## Arquitectura del plugin WordPress (dental-ora/v1)
 
-## Auth
-- Admin: email + password → JWT con `rol: "admin"`
-- Cliente (portal): magic link → JWT con `rol: "cliente"`
-- Clínica (API): header `X-Dora-Service-Key` → `requireServiceKey()` en auth.ts
-- Cookie `secure` controlada por env `COOKIE_SECURE=true` (NO por NODE_ENV, para funcionar en HTTP de prueba)
+**Infraestructura de las clínicas:**
+- WordPress en **hosting compartido DirectAdmin** (NO Coolify, NO contenedores)
+- Cada clínica = WordPress independiente en URL pública HTTPS (ej: `clinica.dabstudio.cl`)
+- El `apiUrl` en `Cliente` siempre es una URL pública accesible desde internet
+- El PUSH del maestro es HTTP normal saliente desde Coolify — sin túneles ni config especial
+- Dev local usa LocalWP (`clinicadental.local`) — estas instalaciones NO se registran en el maestro
 
-## Lógica de cobros centralizada
+**Cómo vive la `serviceKey` en el plugin:**
+```php
+// wp-config.php de cada clínica
+define('DORA_SERVICE_KEY', 'el-mismo-valor-que-serviceKey-en-el-maestro');
+```
+El plugin la lee con: `defined('DORA_SERVICE_KEY') ? DORA_SERVICE_KEY : ''`
+- No está en DB ni en `.env`, solo en `wp-config.php`
+- Rotación: manual por ahora (admin actualiza `wp-config.php` + panel actualiza BD)
+- El maestro NO necesita implementar rotación automática todavía
+
+**Estado de los endpoints (al momento de esta sesión):**
+- `PUT /wp-json/dental-ora/v1/servicio/plan` → **por crear** en `class-servicio.php`
+- `PUT /wp-json/dental-ora/v1/servicio/estado` → **por crear** en `class-servicio.php`
+- `GET /wp-json/dental-ora/v1/servicio/uso` → **por crear** (puede reusar lógica de `GET /plan` existente)
+- `PUT /config {plan}` → existe pero auth con JWT admin (deuda de seguridad, reemplazar por serviceKey)
+- `GET /plan` → existe, tiene datos de uso, servirá de base para `/servicio/uso`
+
+**Mecanismo de suspensión (diseño final acordado):**
+1. Maestro llama `PUT {apiUrl}/servicio/estado` con `{ estado: "suspendida" }`
+2. Plugin escribe `estado_suscripcion = 'suspendida'` en `wp_dora_config`
+3. Helper estático reutilizable en `class-servicio.php`:
+   ```php
+   public static function esta_suspendida(): bool {
+     global $wpdb;
+     $estado = $wpdb->get_var("SELECT estado_suscripcion FROM " . DORA_PREFIX . "config LIMIT 1");
+     return $estado === 'suspendida';
+   }
+   ```
+4. **Dos puntos de uso, dos respuestas distintas:**
+   - `class-auth.php → require_auth()`: si suspendida → **HTTP 402** `{ "error": "Suscripción suspendida", "codigo": "SUSPENSION", "url": "https://panel-maestro/pagar" }` — bloquea admin y profesionales
+   - `class-publico.php → reservar()` (`POST /wp-json/dental-ora/v1/publico/reservar`): si suspendida → **HTTP 503** `{ "error": "La agenda online no está disponible temporalmente", "codigo": "AGENDA_SUSPENDIDA" }` — bloquea nuevas citas de pacientes
+5. Panel React (`auth.store.ts` + interceptor Axios): case 402 → pantalla de bloqueo con botón de pago al portal del maestro
+6. **GET de horarios/disponibilidad SÍ funciona suspendido** — el paciente puede ver horarios pero no confirmar reserva
+7. `/paciente/login` sigue público — los pacientes pueden ver sus citas existentes
+8. La suspensión es **instantánea y síncrona** — no hay caché ni cola de reservas pendientes. El próximo POST después del PUSH ya devuelve 503.
+
+**El maestro NO necesita cambiar nada** — el `PUT /servicio/estado` existente activa/desactiva todo con un solo flag.
+
+**Implicaciones para el maestro:**
+- La suspensión funciona en cadena: maestro → plugin → 402 → React. Sin el plugin, el maestro solo actualiza su propia BD (syncPending=true).
+- El maestro NO necesita saber si el 402 llegó a los usuarios — solo necesita saber si el plugin aceptó el cambio de estado (HTTP 200).
+- `syncPending=true` ocurre si el plugin no responde — el cron reintenta al día siguiente.
+
+## Modelos Prisma (completos)
+
+| Modelo | Campos clave |
+|---|---|
+| `Plan` | clave, nombre, precio, maxProfesionales, modulos[] |
+| `Cliente` | nombre, email, rut, telefono, dominio, coolifyAppId, serviceKey, apiUrl, planId, vendedoraId, syncPending |
+| `Vendedora` | nombre, email, telefono, comisionPct (null=usa global), activa |
+| `Suscripcion` | clienteId, monto, metodoPago, tipoCobro, mpPreapprovalId, fechaInicio, fechaVencimiento, diasGracia |
+| `Pago` | suscripcionId, monto, estado, metodoPago, referencia, fechaPago |
+| `Admin` | email, password, nombre, rol (ADMIN\|CONTADOR) |
+| `MagicLink` | clienteId, token, expiresAt, usado |
+| `Anuncio` | titulo, mensaje, tipo, clienteId (null=global), activo, fechaFin |
+| `LogSuspension` | clienteId, accion, motivo, realizadoPor |
+| `Configuracion` | singleton id:"config" — empresaNombre, empresaRut, empresaDireccion, soporteEmail, soporteWhatsApp, logoUrl, comisionPct |
+| `DocumentoContador` | id ("cotizacion"\|"factura"\|"boleta"), contador |
+| `Cotizacion` | numero, clienteId?, clienteNombre, clienteRut, fecha, vigencia, formaPago, atte, comentarios, estado, items Json, subtotal, iva, total, deletedAt |
+| `Factura` | numero, numeroSii, clienteId?, clienteNombre, clienteRut, cotizacionId?, fechaEmision, fechaVencimiento, plazoPago, estado, montoNeto, iva, total, items Json, adjuntos Json, deletedAt |
+| `Boleta` | numero, numeroSii, clienteId?, clienteNombre, cotizacionId?, fechaEmision, estado, montoTotal, items Json, adjuntos Json, deletedAt |
+
+## Auth y roles
+- `ADMIN` — email + password → JWT `rol:"admin"`, acceso total
+- `CONTADOR` — mismo login `rol:"contador"` — pendiente: restringir rutas en proxy.ts
+- Cliente (portal) — magic link → JWT `rol:"cliente"`
+- Clínica (API) — header `X-Dora-Service-Key` → `requireServiceKey()` en auth.ts
+- Cookie `secure` controlada por `COOKIE_SECURE=true` en env (NO por NODE_ENV)
+
+## Vendedoras
+- Modelo `Vendedora` con nombre, email, telefono, comisionPct propio (null = usa global de Configuracion)
+- `Cliente.vendedoraId FK → Vendedora`
+- CRUD en `/usuarios` + API `/api/vendedoras` y `/api/vendedoras/[id]`
+- Comisión en Reportes: `ingresos × (vendedora.comisionPct ?? config.comisionPct)`
+- Al eliminar vendedora: se desvincula de clientes (`vendedoraId = null`), no se borra el cliente
+
+## Lógica de cobros
 `src/lib/cobros.ts` → `registrarPagoConfirmado()`:
-- Crea pago, extiende 30 días, reactiva si suspendido (vía clinicApi, no Coolify)
-- Push del plan a la clínica tras pago
-- Usado por: webhook MP, pagos manuales admin, portal
+- Crea pago, extiende 30 días, reactiva si suspendido (vía clinicApi.setEstado)
+- Push plan a clínica tras cada pago
+- Usado por: webhook MP pago único + preapproval, Transbank confirmar, pagos manuales admin, portal
 
-## Suspensión
-- Decisión siempre del maestro (nunca la clínica)
-- Vía `clinicApi.setEstado("suspendida")` — la clínica muestra pantalla de no-pago
-- Cron (`/api/cron`) suspende automáticamente tras vencimiento + días de gracia
-- NO se usa Coolify stop/start para suspensión
+## Métodos de pago (portal cliente)
+- **MP automático**: preapproval → MP cobra mensual → `subscription_authorized_payment` webhook
+- **MP manual**: preference → pago único → `payment` webhook
+- **Transbank Webpay Plus**: `POST /api/webhooks/transbank/iniciar` → redirect banco → `GET /confirmar`
+- En dev (`MP_ACCESS_TOKEN` vacío): pagos simulados
+
+## Sistema de Documentos (/facturas-admin)
+
+```
+Cotización → aprobada → [Convertir] → Factura (FAC-) o Boleta (BOL-)
+```
+
+**Numeración:** `getNextNumero(tipo)` en `src/lib/documentos-server.ts` (atómico via $transaction)
+**Utilidades puras** (seguras para client components): `src/lib/documentos.ts` — `calcularTotales`, `formatCLP`, `calcFechaVencimiento`, `itemVacio`
+
+**Rutas:**
+```
+/facturas-admin                           → tabs Cotizaciones | Facturas | Boletas
+/facturas-admin/cotizaciones/nueva        → editor página completa
+/facturas-admin/cotizaciones/[id]         → editar/ver + PDF + Convertir
+/facturas-admin/facturas/nueva            → nueva factura
+/facturas-admin/facturas/[id]             → editar + adjuntos base64
+/facturas-admin/boletas/nueva             → nueva boleta
+/facturas-admin/boletas/[id]              → editar
+```
+
+**API:**
+```
+GET/POST   /api/documentos/cotizaciones
+GET/PUT    /api/documentos/cotizaciones/[id]
+POST       /api/documentos/cotizaciones/[id]/convertir
+GET/POST   /api/documentos/facturas
+GET/PUT    /api/documentos/facturas/[id]
+GET/POST   /api/documentos/boletas
+GET/PUT    /api/documentos/boletas/[id]
+GET        /api/documentos/pdf/[tipo]/[id]   → binary PDF (usa datos de Configuracion)
+```
+
+**Reglas:** IVA 19% fijo, descuento por ítem antes del IVA, montos enteros, soft delete, adjuntos base64 <2MB
+
+## Páginas del panel admin
+
+| Ruta | Descripción |
+|---|---|
+| `/` | Dashboard: stats, vencimientos, gráfico ingresos, atención requerida, actividad reciente |
+| `/clientes` | Lista con 4 stat cards, búsqueda/filtros, **barra de progreso** por suscripción, badge plan, acciones |
+| `/clientes/nuevo` | Crear cliente con plan, vendedora, método pago, RUT |
+| `/clientes/[id]` | Ficha con 7 tabs: Resumen, Suscripción, Pagos, Facturación, Usuarios, API y Conexión, Configuración |
+| `/planes` | CRUD de planes |
+| `/pagos` | Historial de pagos (cards móvil / tabla desktop) |
+| `/reportes` | Stats 12m, gráfico, por método/plan/vendedora con comisiones |
+| `/facturas-admin` | Módulo contable con 3 tabs |
+| `/anuncios` | Crear/gestionar anuncios globales o por cliente |
+| `/usuarios` | Admins + Equipo de ventas (vendedoras) con modal crear/editar |
+| `/configuracion` | Tabs: General, Integraciones, Automatizaciones, Comisiones, Notificaciones, Seguridad, Avanzado |
+
+## Barra de progreso en /clientes
+
+```
+progreso% = (ahora - fechaInicio) / (fechaVencimiento - fechaInicio) × 100
+Verde  < 60% | Amarillo 60-85% | Naranja 85-99% | Rojo = vencida o suspendida
+```
+
+## Ficha de cliente (/clientes/[id])
+
+7 tabs implementados:
+- **Resumen**: Plan y conexión (API URL + ServiceKey copiables), Estado del servicio (checklist), Acciones rápidas, Suscripción activa + confirmar pago, Historial pagos
+- **Suscripción**: detalles completos
+- **Pagos**: historial paginado
+- **API y Conexión**: apiUrl, serviceKey, coolifyAppId copiables
+- **Configuración**: editar nombre, email, RUT, teléfono, notas, apiUrl
+- **Facturación / Usuarios**: placeholder (redirige o "próximamente")
+
+## Configuración (/configuracion)
+
+7 tabs:
+- **General** (2 col): empresa + soporte + comisiones | estado integraciones + cron
+- **Integraciones**: detalle por integración con estado y variable de env
+- **Automatizaciones**: flujo del cron paso a paso + horario de avisos
+- **Comisiones**: % global de vendedoras
+- **Notificaciones / Seguridad / Avanzado**: próximamente
+
+## Componentes reutilizables
+
+| Componente | Descripción |
+|---|---|
+| `DashboardShell` | Sidebar negro + drawer móvil + topbar |
+| `ClienteAcciones` | Iconos Ver / Suspender-Activar / Portal (client, row actions) |
+| `GraficoIngresos` | AreaChart recharts para ingresos mensuales |
+| `AnuncioCard` | Card coloreada por tipo (INFO/ADVERTENCIA/EXITO/MANTENIMIENTO) |
+| `documentos/ItemsEditor` | Array dinámico ítems con IVA en tiempo real |
+| `documentos/ClienteSelectorDoc` | Dropdown clientes del sistema + nombre libre |
+| `documentos/EstadoBadgeDocs` | Badge por estado de cualquier documento |
+| `documentos/ConvertirDocumentoModal` | Modal cotización → factura/boleta con plazo |
+| `documentos/AdjuntosBase64` | Upload/download/delete adjuntos base64 |
+
+## Transbank
+- `src/lib/transbank.ts` → `getWebpayTx()` — integración auto o producción según `TRANSBANK_ENV`
+- Credenciales integración: `IntegrationCommerceCodes.WEBPAY_PLUS` + `IntegrationApiKeys.WEBPAY`
+
+## Webhooks
+- `/api/webhooks/mercadopago` — `payment` (único) + `subscription_authorized_payment` (recurrente) + `subscription_preapproval` (cancelación)
+- `/api/webhooks/transbank/iniciar` + `/confirmar` — Webpay Plus
 
 ## Deploy
 - GitHub: `harielfotografia/panel-cobros` (público)
 - Coolify en VM Ubuntu 24.04 (`192.168.1.125:8000`)
-- App en Docker vía Dockerfile (node:22-alpine, standalone)
-- PostgreSQL en contenedor Docker de Coolify (nombre: `jijikcw82ognfk1cf7r35sob`)
-- Para deployar cambios: `git push` → Coolify → Redeploy
+- Docker: `node:22-alpine`, standalone build
+- PostgreSQL contenedor Coolify: `jijikcw82ognfk1cf7r35sob`
 
 ## Flujo de deploy
 ```
-1. Editar código en PC (Claude Code)
-2. PowerShell: git add . && git commit -m "msg" && git push
-3. Coolify (http://192.168.1.125:8000): click Redeploy
+1. Editar en PC → git add . && git commit -m "msg" && git push
+2. Coolify (http://192.168.1.125:8000) → Redeploy
 ```
 
 ## Modo dev (local Windows)
-- BD local: `npx prisma dev` (Postgres experimental, puerto 51214)
-- `.env` con `MP_ACCESS_TOKEN=""`, `SMTP_HOST=""` → modo dev (pagos simulados, emails a consola)
-- Login admin: `admin@panel.cl` / `admin123`
-- `npx prisma db push` (no migrate dev, falla con shadow DB)
+- BD: `npx prisma dev --name panel` (puerto 51214)
+- Si BD cae: matar PID 51214, borrar `AppData\Local\prisma-dev-nodejs\Data\durable-streams\panel\server.lock.lock`, relanzar
+- `.env` `MP_ACCESS_TOKEN=""`, `SMTP_HOST=""` → modo simulado
+- Login: `admin@panel.cl` / `admin123`
+- Portal clientes (seed): `contacto@sonrisaperfecta.cl`, `admin@odontosalud.cl`, `gerencia@dentalandes.cl`, `info@dentalspa.cl`
+- `npx prisma db push` (NO migrate dev)
 
 ## Gotchas
-- Prisma 7 exige driver adapter en `src/lib/prisma.ts`
-- `prisma.config.ts` necesario para Prisma 7 (incluido en Dockerfile)
-- Next 16: middleware se llama `proxy.ts` (función `proxy`), corre en Edge — no usar jsonwebtoken ahí
-- `src/app/page.tsx` no debe existir (choca con `(dashboard)/page.tsx`)
-- Standalone build necesita copiar `public/` y `.next/static/` manualmente si se usa `node server.js`
+- Prisma 7: driver adapter obligatorio (`@prisma/adapter-pg`) en `src/lib/prisma.ts`
+- Next 16: proxy.ts (no middleware.ts), corre en Edge — no usar jsonwebtoken ahí
+- `src/app/page.tsx` no debe existir
+- `clinicApi.setEstado/pushPlan` reciben `clienteId` como primer arg (para marcar syncPending)
+- `getNextNumero` en `documentos-server.ts` (NO en `documentos.ts`) — evita importar Prisma en client components
+- `documentos.ts` solo utilidades puras, sin imports de Prisma ni Node-only
 
 ## Archivos clave
-- `src/lib/clinic-api.ts` — cliente HTTP para WordPress
+- `src/lib/prisma.ts` — singleton Prisma con PrismaPg adapter
+- `src/lib/clinic-api.ts` — HTTP WordPress con retry + syncPending
 - `src/lib/cobros.ts` — lógica centralizada de pagos
-- `src/lib/auth.ts` — JWT + requireServiceKey()
-- `src/lib/mercadopago.ts` — integración MP
-- `src/app/api/suscripcion/` — endpoints para clínicas
-- `src/app/api/cron/route.ts` — suspensión automática
-- `src/app/(dashboard)/planes/page.tsx` — admin de planes
-- `scripts/seed.ts` — datos de prueba (3 planes, 4 clínicas)
+- `src/lib/transbank.ts` — Webpay Plus helper
+- `src/lib/documentos.ts` — utilidades puras (formatCLP, calcularTotales, etc.)
+- `src/lib/documentos-server.ts` — getNextNumero con Prisma (solo servidor)
+- `src/lib/auth.ts` — JWT + requireAdmin + requireCliente + requireServiceKey
+- `src/app/api/documentos/` — CRUD + PDF generator
+- `src/app/api/vendedoras/` — CRUD vendedoras
+- `src/app/(dashboard)/clientes/page.tsx` — lista con progreso y filtros
+- `src/app/(dashboard)/clientes/[id]/page.tsx` — ficha 7 tabs (client component)
+- `src/app/(dashboard)/configuracion/page.tsx` — 7 tabs (client component)
+- `src/app/(dashboard)/usuarios/page.tsx` — admins + vendedoras con modal
+- `src/components/DashboardShell.tsx` — layout admin con sidebar + drawer
+- `scripts/seed.ts` — 4 clínicas dentales + planes + anuncios + documentos de prueba
 
 ## Por implementar
-- Endpoints WordPress plugin (`PUT /servicio/plan`, `PUT /servicio/estado`, `GET /servicio/uso`)
-- Retry con backoff en clinic-api.ts + flag syncPending
-- Transbank Webpay Plus
-- Webhook MP para preapproval recurrente
-- Dominio real + HTTPS (agregar `COOKIE_SECURE=true`)
+- Plugin WordPress (endpoints `PUT /servicio/estado`, `PUT /servicio/plan`, `GET /servicio/uso`)
+- Restricción de rutas para rol CONTADOR en proxy.ts
+- Dominio real + HTTPS (`COOKIE_SECURE=true` en .env prod)
+- Webhook MP preapproval recurrente para renovaciones automáticas (parcialmente implementado)
+- Portal vendedoras (actualmente sin login propio)
