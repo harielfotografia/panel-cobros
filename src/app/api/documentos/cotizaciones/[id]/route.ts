@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const itemsConTotal = (items as ItemDoc[]).map((it) => ({
       ...it,
-      total: Math.round(it.cantidad * it.precioUnitario * (1 - (it.descuentoPct ?? 0) / 100)),
+      total: Math.round(it.cantidad * it.precioUnitario * (1 - (it.descuento ?? 0) / 100)),
     }));
     const { subtotal, iva, total } = calcularTotales(itemsConTotal);
 
