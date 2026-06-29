@@ -7,7 +7,7 @@ export type Rol = "admin" | "cliente";
 export type SesionPayload = { id: string; email: string; rol: Rol };
 
 export function signToken(payload: SesionPayload) {
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, SECRET, { expiresIn: "24h" });
 }
 
 export function verifyToken(token: string) {

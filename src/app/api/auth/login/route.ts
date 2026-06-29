@@ -4,9 +4,19 @@ import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
+  const { identifier, password, email } = await req.json();
 
-  const admin = await prisma.admin.findUnique({ where: { email } });
+  // Acepta tanto el campo legacy "email" como el nuevo "identifier"
+  const query = identifier ?? email ?? "";
+
+  const admin = await prisma.admin.findFirst({
+    where: {
+      OR: [
+        { email: query },
+        { nombre: query },
+      ],
+    },
+  });
   if (!admin) return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
 
   const valid = await bcrypt.compare(password, admin.password);

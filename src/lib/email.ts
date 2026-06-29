@@ -66,6 +66,19 @@ export async function enviarAvisoSuspension(cliente: {
   );
 }
 
+export async function enviarAlertaCronErrores(errores: string[]) {
+  const adminEmail = process.env.ADMIN_ALERT_EMAIL;
+  if (!adminEmail) return;
+  await enviar(
+    adminEmail,
+    `[Panel Cobros] Cron encontró ${errores.length} error(es)`,
+    `<h2>Errores en el cron de suspensión automática</h2>
+     <p>Se produjeron los siguientes errores al procesar vencimientos:</p>
+     <ul>${errores.map((e) => `<li>${e}</li>`).join("")}</ul>
+     <p>Revisa el panel para verificar el estado de los clientes afectados.</p>`
+  );
+}
+
 export async function enviarAvisoReactivacion(cliente: {
   nombre: string;
   email: string;

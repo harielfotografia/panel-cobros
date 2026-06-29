@@ -269,6 +269,48 @@ Verde  < 60% | Amarillo 60-85% | Naranja 85-99% | Rojo = vencida o suspendida
 - `src/components/DashboardShell.tsx` — layout admin con sidebar + drawer
 - `scripts/seed.ts` — 4 clínicas dentales + planes + anuncios + documentos de prueba
 
+## Plan de Seguridad — Fases de Implementación
+
+### FASE 1 — CRÍTICOS (implementar antes de cualquier cliente real)
+
+| # | Archivo | Vulnerabilidad | Fix |
+|---|---------|---------------|-----|
+| 1 | `src/app/api/webhooks/mercadopago/route.ts` | Sin validación de firma HMAC — cualquiera puede simular un pago | Verificar `X-Signature` con HMAC-SHA256 usando `MP_WEBHOOK_SECRET` |
+| 2 | `dental-ora-plugin/dental-ora-api.php:17` | Secret JWT hardcodeado como fallback — todas las clínicas comparten el mismo secret | `wp_die()` si `DORA_JWT_SECRET` no está definido |
+| 3 | `class-publico.php:71-78` | `verificar_email` expone nombre, apellido, RUT, teléfono sin autenticación | Devolver solo `{ existe, tienePassword }` |
+| 4 | `class-publico.php:159` | Contraseña derivada del RUT (adivinable) + enviada en email en texto plano | Generar contraseña aleatoria segura con `bin2hex(random_bytes(8))` |
+| 5 | `src/lib/cobros.ts` | Sin idempotencia — webhook retry crea pagos duplicados | Verificar si ya existe `pago` con la misma `referencia` antes de insertar |
+
+### FASE 2 — ALTOS (antes de escalar a múltiples clínicas)
+
+| # | Archivo | Vulnerabilidad | Fix |
+|---|---------|---------------|-----|
+| 6 | `src/app/api/clientes/[id]/route.ts` | Mass assignment — PUT acepta `serviceKey`, `estado`, `coolifyAppId` sin whitelist | Filtrar campos permitidos explícitamente antes de escribir a DB |
+| 7 | `src/app/api/pagos/route.ts` | `monto` sin rango — acepta negativos y ceros | Validar `monto > 0 && monto < 10_000_000` |
+| 8 | `src/lib/clinic-api.ts:26` | `apiUrl` sin validación — admin puede redirigir requests a servidor externo | Validar `protocol === 'https:'` y formato URL antes de cada llamada |
+| 9 | `dental-ora-api.php:109-128` | CORS acepta `localhost:*` — cualquier página local puede hacer requests | Lista blanca estricta por `DORA_PANEL_URL` exacto |
+
+### FASE 3 — MEDIOS (antes de producción con HTTPS real)
+
+| # | Archivo | Vulnerabilidad | Fix |
+|---|---------|---------------|-----|
+| 10 | `src/lib/auth.ts:10` | JWT expira en 7 días — token robado útil una semana | Reducir a 24h |
+| 11 | `class-servicio.php:129` | `esta_suspendida()` hace query a BD en cada request autenticado | Cache estático por request con variable `static` |
+| 12 | `src/app/api/cron/route.ts` | Errores de suspensión no alertan — fallos silenciosos | Enviar email a admin si `resultados.errores.length > 0` |
+| 13 | `class-publico.php:195-223` | Race condition en doble reserva — dos requests simultáneos pasan el check | `SELECT ... FOR UPDATE` en transaction antes del INSERT |
+| 14 | `next.config.ts` | Sin HSTS en producción | Agregar header `Strict-Transport-Security` |
+
+### Estado de implementación
+- [x] Fase 1: Críticos — implementado 2026-06-28
+- [x] Fase 2: Altos — implementado 2026-06-28
+- [x] Fase 3: Medios (parcial) — implementado 2026-06-28
+
+### Variables de entorno nuevas requeridas
+- `MP_WEBHOOK_SECRET` — secret del webhook MP (en Coolify + .env). Vacío en dev = validación omitida.
+- `ADMIN_ALERT_EMAIL` — email del admin para recibir alertas del cron.
+
+---
+
 ## Por implementar
 - Plugin WordPress (endpoints `PUT /servicio/estado`, `PUT /servicio/plan`, `GET /servicio/uso`)
 - Restricción de rutas para rol CONTADOR en proxy.ts

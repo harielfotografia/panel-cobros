@@ -57,7 +57,7 @@ export default function PlanesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Â¿Desactivar este plan?")) return;
+    if (!confirm("¿Desactivar este plan?")) return;
     await fetch(`/api/planes/${id}`, { method: "DELETE" });
     load();
   }
@@ -79,7 +79,7 @@ export default function PlanesPage() {
             <Field label="Clave (ej: BASICO)" value={form.clave} onChange={(v) => setForm(f => ({ ...f, clave: v }))} required />
             <Field label="Nombre" value={form.nombre} onChange={(v) => setForm(f => ({ ...f, nombre: v }))} required />
             <Field label="Precio (CLP)" type="number" value={form.precio} onChange={(v) => setForm(f => ({ ...f, precio: v }))} required />
-            <Field label="MÃ¡x. profesionales (0=ilimitado)" type="number" value={form.maxProfesionales} onChange={(v) => setForm(f => ({ ...f, maxProfesionales: v }))} />
+            <Field label="Máx. profesionales (0=ilimitado)" type="number" value={form.maxProfesionales} onChange={(v) => setForm(f => ({ ...f, maxProfesionales: v }))} />
           </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}
           <div className="flex gap-2">
@@ -98,7 +98,7 @@ export default function PlanesPage() {
               <th className="text-left px-4 py-3">Clave</th>
               <th className="text-left px-4 py-3">Nombre</th>
               <th className="text-right px-4 py-3">Precio</th>
-              <th className="text-right px-4 py-3">MÃ¡x. Prof.</th>
+              <th className="text-right px-4 py-3">Máx. Prof.</th>
               <th className="text-right px-4 py-3">Clientes</th>
               <th className="text-right px-4 py-3">Estado</th>
               <th className="text-right px-4 py-3"></th>
@@ -110,7 +110,7 @@ export default function PlanesPage() {
                 <td className="px-4 py-3 font-mono text-xs">{p.clave}</td>
                 <td className="px-4 py-3">{p.nombre}</td>
                 <td className="px-4 py-3 text-right">${p.precio.toLocaleString("es-CL")}</td>
-                <td className="px-4 py-3 text-right">{p.maxProfesionales === 0 ? "âˆž" : p.maxProfesionales}</td>
+                <td className="px-4 py-3 text-right">{p.maxProfesionales === 0 ? "∞" : p.maxProfesionales}</td>
                 <td className="px-4 py-3 text-right text-gray-600">{p._count?.clientes ?? 0}</td>
                 <td className="px-4 py-3 text-right">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${p.activo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>

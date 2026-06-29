@@ -24,6 +24,14 @@ export async function registrarPagoConfirmado(opts: RegistrarPagoOpts) {
   });
   if (!suscripcion) throw new Error("Suscripción no encontrada");
 
+  // Idempotencia: si ya existe un pago con la misma referencia externa, no duplicar.
+  if (opts.referencia) {
+    const existente = await prisma.pago.findFirst({
+      where: { referencia: opts.referencia, estado: "CONFIRMADO" },
+    });
+    if (existente) return { pago: existente, nuevaFecha: suscripcion.fechaVencimiento, reactivado: false };
+  }
+
   const pago = await prisma.pago.create({
     data: {
       suscripcionId: opts.suscripcionId,

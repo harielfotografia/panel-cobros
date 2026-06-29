@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { clinicApi } from "@/lib/clinic-api";
-import { enviarAvisoVencimiento, enviarAvisoSuspension } from "@/lib/email";
+import { enviarAvisoVencimiento, enviarAvisoSuspension, enviarAlertaCronErrores } from "@/lib/email";
 
 
 export async function POST(req: NextRequest) {
@@ -65,6 +65,11 @@ export async function POST(req: NextRequest) {
 
   // Reintentar clientes con syncPending (clinic-api falló antes)
   const syncResultados = await clinicApi.retrySyncPending();
+
+  // Alertar al admin si hubo errores de suspensión
+  if (resultados.errores.length > 0) {
+    await enviarAlertaCronErrores(resultados.errores).catch(() => {});
+  }
 
   return NextResponse.json({ ...resultados, syncRetry: syncResultados });
 }

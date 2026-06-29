@@ -1,8 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registrarPagoConfirmado } from "@/lib/cobros";
+import crypto from "crypto";
 
 const MP_TOKEN = process.env.MP_ACCESS_TOKEN;
+const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
+
+// Verifica firma HMAC-SHA256 que MercadoPago incluye en X-Signature.
+// Formato: "ts=<timestamp>,v1=<hex-signature>"
+// Manifest firmado: "id:<dataId>;request-id:<requestId>;ts:<ts>;"
+// Ref: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+function verificarFirmaMP(req: NextRequest, rawBody: string): boolean {
+  // En dev (sin secret configurado) se omite la validación
+  if (!MP_WEBHOOK_SECRET) return true;
+
+  const xSignature = req.headers.get("x-signature") ?? "";
+  const xRequestId = req.headers.get("x-request-id") ?? "";
+  const dataId = new URL(req.url).searchParams.get("data.id") ?? "";
+
+  const ts = xSignature.match(/ts=(\d+)/)?.[1];
+  const v1 = xSignature.match(/v1=([a-f0-9]+)/)?.[1];
+  if (!ts || !v1) return false;
+
+  // Rechazar webhooks con más de 5 minutos de antigüedad
+  const ahora = Math.floor(Date.now() / 1000);
+  if (Math.abs(ahora - parseInt(ts)) > 300) return false;
+
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+  const expected = crypto
+    .createHmac("sha256", MP_WEBHOOK_SECRET)
+    .update(manifest)
+    .digest("hex");
+
+  // Comparación en tiempo constante para evitar timing attacks
+  try {
+    return crypto.timingSafeEqual(Buffer.from(v1, "hex"), Buffer.from(expected, "hex"));
+  } catch {
+    return false;
+  }
+}
 
 async function mpGet(path: string) {
   const res = await fetch(`https://api.mercadopago.com${path}`, {
@@ -13,7 +49,20 @@ async function mpGet(path: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  const rawBody = await req.text();
+
+  if (!verificarFirmaMP(req, rawBody)) {
+    console.warn("[webhook-mp] Firma inválida — request rechazado");
+    return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
+  }
+
+  let body: { type?: string; data?: { id?: string } };
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
   const { type, data } = body;
 
   // Pago único aprobado (preference checkout)
@@ -38,6 +87,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error("[webhook-mp] payment error:", e);
+      return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }
   }
 
@@ -47,20 +97,18 @@ export async function POST(req: NextRequest) {
     if (!invoiceId) return NextResponse.json({ ok: true });
 
     try {
-      // Obtener detalle del cobro recurrente
       const invoice = await mpGet(`/v1/subscription_authorized_payments/${invoiceId}`);
       if (invoice.status !== "processed") return NextResponse.json({ ok: true });
 
       const preapprovalId = invoice.preapproval_id;
       if (!preapprovalId) return NextResponse.json({ ok: true });
 
-      // Buscar la suscripción por preapprovalId
       const suscripcion = await prisma.suscripcion.findFirst({
         where: { mpPreapprovalId: String(preapprovalId) },
       });
 
       if (!suscripcion) {
-        console.error(`[webhook-mp] preapproval ${preapprovalId} no encontrado en BD`);
+        console.error("[webhook-mp] preapproval no encontrado en BD");
         return NextResponse.json({ ok: true });
       }
 
@@ -76,6 +124,7 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error("[webhook-mp] preapproval error:", e);
+      return NextResponse.json({ error: "Error interno" }, { status: 500 });
     }
   }
 

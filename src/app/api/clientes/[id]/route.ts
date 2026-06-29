@@ -28,6 +28,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await requireAdmin();
     const { id } = await params;
     const body = await req.json();
+
+    // Validar planId si viene en el body
+    if (body.planId) {
+      const plan = await prisma.plan.findUnique({ where: { id: body.planId } });
+      if (!plan) return NextResponse.json({ error: "Plan no encontrado" }, { status: 400 });
+    }
+
+    // Validar apiUrl si viene
+    if (body.apiUrl) {
+      try {
+        const url = new URL(body.apiUrl);
+        if (url.protocol !== "https:") {
+          return NextResponse.json({ error: "apiUrl debe usar HTTPS" }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ error: "apiUrl inválida" }, { status: 400 });
+      }
+    }
+
     const cliente = await prisma.cliente.update({
       where: { id },
       data: {
@@ -40,8 +59,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
     return NextResponse.json(cliente);
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Error al actualizar cliente" }, { status: 400 });
   }
 }
 
