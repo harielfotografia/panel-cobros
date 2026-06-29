@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const itemsConTotal = (items as ItemDoc[]).map((it) => ({
       ...it,
-      total: Math.round(it.cantidad * it.precioUnitario * (1 - it.descuento / 100)),
+      total: Math.round(it.cantidad * it.precioUnitario * (1 - (it.descuentoPct ?? 0) / 100)),
     }));
     const { subtotal, iva, total } = calcularTotales(itemsConTotal);
     const numero = await getNextNumero("cotizacion");
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         clienteId: clienteId || null,
         clienteNombre: clienteNombre || "",
         clienteRut: clienteRut || "",
-        fecha: new Date(fecha),
+        fecha: fecha ? new Date(fecha) : new Date(),
         vigencia: vigencia || "30 días",
         formaPago: formaPago || "",
         atte: atte || "",
