@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Server, CreditCard,
   FileText, Megaphone, BarChart2, UserCog,
@@ -28,10 +28,18 @@ const NAV = [
   ]},
 ];
 
-export function DashboardShell({ email, children }: { email: string; children: React.ReactNode }) {
+export function DashboardShell({ email, nombre, children }: { email: string; nombre?: string; children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
-  const initials = email.slice(0, 2).toUpperCase();
+  const router = useRouter();
+  const displayName = nombre || email.split("@")[0];
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
 
   function isActive(href: string) {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -47,7 +55,7 @@ export function DashboardShell({ email, children }: { email: string; children: R
             </div>
             <span className="text-sm font-bold text-white">Panel de Gestión</span>
           </div>
-          <p className="text-xs text-gray-500 pl-9">Administrador</p>
+          <p className="text-xs text-gray-500 pl-9">{displayName}</p>
         </div>
 
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
@@ -81,14 +89,12 @@ export function DashboardShell({ email, children }: { email: string; children: R
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white truncate">Administrador</p>
+              <p className="text-xs font-medium text-white truncate">{displayName}</p>
               <p className="text-[10px] text-gray-500 truncate">{email}</p>
             </div>
-            <form action="/api/auth/logout" method="POST">
-              <button type="submit" title="Cerrar sesión">
-                <LogOut size={14} className="text-gray-500 hover:text-red-400 transition-colors" />
-              </button>
-            </form>
+            <button onClick={handleLogout} title="Cerrar sesión" className="p-1">
+              <LogOut size={14} className="text-gray-500 hover:text-red-400 transition-colors" />
+            </button>
           </div>
         </div>
       </>
@@ -147,12 +153,31 @@ export function DashboardShell({ email, children }: { email: string; children: R
             <Link href="/anuncios" className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
               <Bell size={18} />
             </Link>
-            <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
-                {initials}
-              </div>
-              <span className="text-sm font-medium text-gray-700 hidden sm:block">Administrador</span>
-              <ChevronDown size={14} className="text-gray-400 hidden sm:block" />
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
+                  {initials}
+                </div>
+                <span className="text-sm font-medium text-gray-700 hidden sm:block">{displayName}</span>
+                <ChevronDown size={14} className="text-gray-400 hidden sm:block" />
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-12 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-44">
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <p className="text-xs font-medium text-gray-900">{displayName}</p>
+                    <p className="text-xs text-gray-400 truncate">{email}</p>
+                  </div>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut size={14} /> Cerrar sesión
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
