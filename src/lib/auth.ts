@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 const SECRET = process.env.JWT_SECRET!;
 
-export type Rol = "admin" | "cliente";
+export type Rol = "admin" | "cliente" | "vendedora" | "contador";
 export type SesionPayload = { id: string; email: string; rol: Rol };
 
 export function signToken(payload: SesionPayload) {
