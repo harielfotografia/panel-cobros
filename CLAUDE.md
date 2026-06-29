@@ -311,9 +311,35 @@ Verde  < 60% | Amarillo 60-85% | Naranja 85-99% | Rojo = vencida o suspendida
 
 ---
 
+## Deploy actual (producción)
+- **URL:** https://portal.dabstudio.cl (DNS configurado, pendiente SSL activarse)
+- **IP VPS:** 45.7.229.211 (OpenCloud Chile, Ubuntu 22.04, 2vCPU 4GB)
+- **SSH:** `ssh -p 50803 root@45.7.229.211`
+- **Coolify:** http://45.7.229.211:8000 (admin@panel.cl / admin123)
+- **DB URL:** `postgres://postgres:Myr941pmOcateluFtAFxvU1VqBkJagAjbxjXtUfRT78EFL1MPdOO0pTCnSg3tDgQ@dwpal9qyhbfeqrjigzrj6fu7:5432/postgres`
+- **Contenedor app:** `docker ps | grep hthu` (nombre cambia en cada deploy)
+- **Si hay cambios de schema:** correr `docker run --rm --network coolify -v /tmp/repo/prisma:/prisma -e DATABASE_URL="..." node:22-alpine sh -c "npm install prisma@7 --prefix /tmp 2>/dev/null && DATABASE_URL='...' node /tmp/node_modules/prisma/build/index.js db push --schema=/prisma/schema.prisma --accept-data-loss"`
+- **Si /tmp/repo no existe:** `cd /tmp && git clone https://github.com/harielfotografia/panel-cobros.git repo`
+
+## Login
+- **Admin:** email o nombre de usuario + contraseña (ojo para ver contraseña)
+- **Portal cliente:** buscar por dominio, RUT empresa, nombre o email → muestra estado suscripción → accede al portal
+
+## Portal cliente (`/portal`)
+- Acceso via magic link (email) O búsqueda por dominio/RUT/nombre desde `/portal/login`
+- Páginas: dashboard, pagar, facturas, notificaciones, cuenta
+- API buscar cliente: `POST /api/portal/buscar-cliente` → devuelve info + setea cookie JWT
+
+## Animaciones y diseño
+- CSS global en `src/app/globals.css`: `animate-fade-in-up`, `animate-scale-in`, skeleton shimmer, stagger delays
+- Páginas rediseñadas: Planes, Pagos, Login admin, Portal login
+- Fondo general: `bg-gray-50` (no blanco puro)
+
 ## Por implementar
 - Plugin WordPress (endpoints `PUT /servicio/estado`, `PUT /servicio/plan`, `GET /servicio/uso`)
 - Restricción de rutas para rol CONTADOR en proxy.ts
-- Dominio real + HTTPS (`COOKIE_SECURE=true` en .env prod)
+- HTTPS activo en portal.dabstudio.cl (`COOKIE_SECURE=true` en Coolify)
 - Webhook MP preapproval recurrente para renovaciones automáticas (parcialmente implementado)
 - Portal vendedoras (actualmente sin login propio)
+- Paginación real en tablas (Pagos, Clientes)
+- Configurar MP_ACCESS_TOKEN real en Coolify
