@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { UserCog, Users, Plus, Trash2, Pencil, X, Check, Phone, Mail, Percent } from "lucide-react";
+import { UserCog, Users, Plus, Trash2, Pencil, X, Check, Phone, Mail, Percent, ExternalLink, CreditCard } from "lucide-react";
 
 type Admin = { id: string; email: string; nombre: string; rol: string; createdAt: string };
-type Vendedora = { id: string; nombre: string; email: string | null; telefono: string | null; comisionPct: number | null; activa: boolean; _count: { clientes: number } };
+type Vendedora = { id: string; nombre: string; email: string | null; telefono: string | null; rut: string | null; comisionPct: number | null; activa: boolean; _count: { clientes: number } };
 
 const ROL_BADGE: Record<string, string> = {
   ADMIN: "bg-blue-100 text-blue-700",
@@ -23,8 +23,8 @@ export default function UsuariosPage() {
   const [errorAdmin, setErrorAdmin] = useState("");
 
   // Formulario vendedora (crear / editar)
-  const [formV, setFormV] = useState<{ id: string | null; nombre: string; email: string; telefono: string; comisionPct: string }>({
-    id: null, nombre: "", email: "", telefono: "", comisionPct: "",
+  const [formV, setFormV] = useState<{ id: string | null; nombre: string; email: string; telefono: string; rut: string; password: string; comisionPct: string }>({
+    id: null, nombre: "", email: "", telefono: "", rut: "", password: "", comisionPct: "",
   });
   const [showV, setShowV] = useState(false);
   const [savingV, setSavingV] = useState(false);
@@ -69,12 +69,12 @@ export default function UsuariosPage() {
 
   // ── Vendedoras ───────────────────────────────────────────────────────────
   function abrirNuevaV() {
-    setFormV({ id: null, nombre: "", email: "", telefono: "", comisionPct: "" });
+    setFormV({ id: null, nombre: "", email: "", telefono: "", rut: "", password: "", comisionPct: "" });
     setErrorV(""); setShowV(true);
   }
 
   function abrirEditarV(v: Vendedora) {
-    setFormV({ id: v.id, nombre: v.nombre, email: v.email ?? "", telefono: v.telefono ?? "", comisionPct: v.comisionPct != null ? String(v.comisionPct) : "" });
+    setFormV({ id: v.id, nombre: v.nombre, email: v.email ?? "", telefono: v.telefono ?? "", rut: v.rut ?? "", password: "", comisionPct: v.comisionPct != null ? String(v.comisionPct) : "" });
     setErrorV(""); setShowV(true);
   }
 
@@ -86,6 +86,8 @@ export default function UsuariosPage() {
       nombre: formV.nombre.trim(),
       email: formV.email || null,
       telefono: formV.telefono || null,
+      rut: formV.rut || null,
+      password: formV.password || undefined,
       comisionPct: formV.comisionPct !== "" ? Number(formV.comisionPct) : null,
     };
     const url = formV.id ? `/api/vendedoras/${formV.id}` : "/api/vendedoras";
@@ -221,6 +223,11 @@ export default function UsuariosPage() {
                       {!v.activa && <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Inactiva</span>}
                     </div>
                     <div className="flex flex-wrap gap-3 mt-1">
+                      {v.rut && (
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <CreditCard size={11} /> {v.rut}
+                        </span>
+                      )}
                       {v.email && (
                         <span className="flex items-center gap-1 text-xs text-gray-400">
                           <Mail size={11} /> {v.email}
@@ -238,6 +245,11 @@ export default function UsuariosPage() {
                       <span className="text-xs text-gray-400">
                         · {v._count.clientes} {v._count.clientes === 1 ? "cliente" : "clientes"} asignados
                       </span>
+                      {v.password && (
+                        <a href="/vendedora/login" target="_blank" className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
+                          <ExternalLink size={10} /> Portal vendedora
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -293,6 +305,16 @@ export default function UsuariosPage() {
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Teléfono</label>
                   <input value={formV.telefono} onChange={e => setFormV(f => ({...f, telefono: e.target.value}))} placeholder="+56 9 xxxx xxxx" className={inp} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">RUT (para login)</label>
+                  <input value={formV.rut} onChange={e => setFormV(f => ({...f, rut: e.target.value}))} placeholder="12.345.678-9" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">{formV.id ? "Nueva contraseña (vacío = no cambia)" : "Contraseña *"}</label>
+                  <input type="password" value={formV.password} onChange={e => setFormV(f => ({...f, password: e.target.value}))} placeholder="••••••••" className={inp} required={!formV.id} />
                 </div>
               </div>
               <div>

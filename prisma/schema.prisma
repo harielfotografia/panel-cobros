@@ -46,7 +46,9 @@ model Vendedora {
   nombre      String
   email       String?   @unique
   telefono    String?
-  comisionPct Float?    @map("comision_pct") // null = usa el global de Configuracion
+  rut         String?   @unique
+  password    String?
+  comisionPct Float?    @map("comision_pct")
   activa      Boolean   @default(true)
   createdAt   DateTime  @default(now())
   clientes    Cliente[]

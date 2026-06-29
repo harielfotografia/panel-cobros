@@ -7,8 +7,11 @@ const PUBLIC_PATHS = [
   "/portal/login",
   "/portal/verify",
   "/api/portal/magic-link",
+  "/api/portal/buscar-cliente",
   "/api/webhooks",
   "/api/cron",
+  "/vendedora/login",
+  "/api/vendedoras/login",
 ];
 
 // Rutas donde redirigir al login del portal (en vez del admin) si falta sesión.
@@ -26,7 +29,9 @@ export function proxy(req: NextRequest) {
 
   const token = req.cookies.get("token")?.value;
   if (!token) {
-    const destino = pathname.startsWith(PORTAL_PREFIX) ? "/portal/login" : "/login";
+    let destino = "/login";
+    if (pathname.startsWith(PORTAL_PREFIX)) destino = "/portal/login";
+    else if (pathname.startsWith("/vendedora")) destino = "/vendedora/login";
     return NextResponse.redirect(new URL(destino, req.url));
   }
 
