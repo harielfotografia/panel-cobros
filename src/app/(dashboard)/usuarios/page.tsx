@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { UserCog, Users, Plus, Trash2, Pencil, X, Check, Phone, Mail, Percent, ExternalLink, CreditCard } from "lucide-react";
 
 type Admin = { id: string; email: string; nombre: string; rol: string; createdAt: string };
-type Vendedora = { id: string; nombre: string; email: string | null; telefono: string | null; rut: string | null; comisionPct: number | null; activa: boolean; _count: { clientes: number } };
+type Vendedora = { id: string; nombre: string; email: string | null; telefono: string | null; rut: string | null; password?: string | null; comisionPct: number | null; activa: boolean; _count: { clientes: number } };
 
 const ROL_BADGE: Record<string, string> = {
   ADMIN: "bg-blue-100 text-blue-700",
