@@ -18,13 +18,13 @@ const DEFAULT: Config = {
 };
 
 const TABS = [
-  { id: "general",          label: "General",          icon: Settings },
-  { id: "integraciones",    label: "Integraciones",    icon: Link2 },
-  { id: "automatizaciones", label: "Automatizaciones", icon: Clock },
-  { id: "comisiones",       label: "Comisiones",       icon: Percent },
-  { id: "notificaciones",   label: "Notificaciones",   icon: Bell },
-  { id: "seguridad",        label: "Seguridad",        icon: Shield },
-  { id: "avanzado",         label: "Avanzado",         icon: Code2 },
+  { id: "general",          label: "General",       icon: Settings },
+  { id: "integraciones",    label: "Integraciones", icon: Link2 },
+  { id: "automatizaciones", label: "Automatizar",   icon: Clock },
+  { id: "comisiones",       label: "Comisiones",    icon: Percent },
+  { id: "notificaciones",   label: "Avisos",        icon: Bell },
+  { id: "seguridad",        label: "Seguridad",     icon: Shield },
+  { id: "avanzado",         label: "Avanzado",      icon: Code2 },
 ];
 
 const CRON_CMD = `# Cada día a las 08:00\n0 8 * * * curl -X POST https://panel.tudominio.cl/api/cron \\\n  -H "x-cron-secret: TU_CRON_SECRET"`;
