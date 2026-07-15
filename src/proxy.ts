@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Rutas públicas: login admin, login/verify del portal, sus APIs, webhooks y cron.
 const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
@@ -14,12 +13,33 @@ const PUBLIC_PATHS = [
   "/api/vendedoras/login",
 ];
 
-// Rutas donde redirigir al login del portal (en vez del admin) si falta sesión.
 const PORTAL_PREFIX = "/portal";
 
-// Chequeo "optimista": solo verifica que exista la cookie de sesión.
-// La verificación criptográfica real del JWT ocurre en getSession()/requireAuth()
-// dentro de los route handlers y server components (runtime de Node), no aquí en Edge.
+// Rutas permitidas para CONTADOR (todo lo demás redirige al dashboard)
+const CONTADOR_ALLOWED = [
+  "/",
+  "/facturas-admin",
+  "/reportes",
+  "/pagos",
+  "/clientes",
+  "/api/documentos",
+  "/api/pagos",
+  "/api/clientes",
+  "/api/configuracion",
+  "/api/portal",
+];
+
+// Decodifica payload JWT sin verificar firma (la verificación real ocurre en Node runtime)
+function jwtRole(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return decoded?.rol ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -33,6 +53,16 @@ export function proxy(req: NextRequest) {
     if (pathname.startsWith(PORTAL_PREFIX)) destino = "/portal/login";
     else if (pathname.startsWith("/vendedora")) destino = "/vendedora/login";
     return NextResponse.redirect(new URL(destino, req.url));
+  }
+
+  // Restricción CONTADOR: solo puede acceder a contabilidad y reportes
+  if (jwtRole(token) === "contador") {
+    const allowed = CONTADOR_ALLOWED.some((p) =>
+      pathname === p || pathname.startsWith(p + "/")
+    );
+    if (!allowed) {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
   }
 
   return NextResponse.next();

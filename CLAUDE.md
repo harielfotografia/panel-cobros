@@ -100,6 +100,30 @@ El plugin la lee con: `defined('DORA_SERVICE_KEY') ? DORA_SERVICE_KEY : ''`
 | `Factura` | numero, numeroSii, clienteId?, clienteNombre, clienteRut, cotizacionId?, fechaEmision, fechaVencimiento, plazoPago, estado, montoNeto, iva, total, items Json, adjuntos Json, deletedAt |
 | `Boleta` | numero, numeroSii, clienteId?, clienteNombre, cotizacionId?, fechaEmision, estado, montoTotal, items Json, adjuntos Json, deletedAt |
 
+## Seguridad — Estado actual
+
+**Implementado (2026-07-01):**
+- `src/app/api/webhooks/mercadopago/route.ts` — validación firma HMAC-SHA256 (`X-Signature`) + anti-replay ±5 min + comparación `timingSafeEqual`. Variable: `MP_WEBHOOK_SECRET` (vacío en dev = omite validación).
+- `src/lib/cobros.ts` — idempotencia: si ya existe un `Pago` con la misma `referencia` CONFIRMADO, no duplica.
+- `src/lib/auth.ts` — JWT expira en 24h (antes 7d).
+- `src/lib/email.ts` — nueva función `enviarAlertaCronErrores()` al admin si el cron tiene errores.
+- `src/app/api/cron/route.ts` — llama `enviarAlertaCronErrores` si `resultados.errores.length > 0`. Variable: `ADMIN_ALERT_EMAIL`.
+- `src/app/api/clientes/[id]/route.ts` — valida que `planId` exista, que `apiUrl` sea HTTPS válida, catch sin exponer error interno.
+- `src/app/api/pagos/route.ts` — valida `monto > 0 && < 10_000_000`, catch sin exponer error interno.
+
+**Plugin clínica (`dental-ora-plugin`):**
+- `dental-ora-api.php` — `wp_die()` si `DORA_JWT_SECRET` no está en wp-config (elimina secret hardcodeado).
+- `dental-ora-api.php` — CORS lista blanca estricta: solo `localhost:5200`, `localhost:5201`, `DORA_PANEL_URL` exacto.
+- `includes/class-servicio.php` — `esta_suspendida()` con cache `static $cache` (un solo SELECT por proceso).
+- `includes/class-publico.php` — `verificar_email` devuelve solo `{ existe, tienePassword }` (sin PII).
+- `includes/class-publico.php` — contraseña inicial con `bin2hex(random_bytes(8))` (no derivada del RUT).
+
+**Variables de entorno nuevas (agregar en Coolify):**
+```
+MP_WEBHOOK_SECRET=<configurar en dashboard MP → Notificaciones → Webhook secret>
+ADMIN_ALERT_EMAIL=agenciadab.cl@gmail.com
+```
+
 ## Auth y roles
 - `ADMIN` — email + password → JWT `rol:"admin"`, acceso total
 - `CONTADOR` — mismo login `rol:"contador"` — pendiente: restringir rutas en proxy.ts
