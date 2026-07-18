@@ -37,6 +37,18 @@ export async function requireAdmin() {
   return session;
 }
 
+// CONTADOR tiene acceso de solo-contabilidad (facturación, pagos, clientes de solo lectura,
+// reportes) — ver CONTADOR_ALLOWED en proxy.ts. Usar en los mismos endpoints que esa lista
+// permite navegar; las acciones administrativas (crear/editar/eliminar/suspender clientes,
+// planes, usuarios) siguen exigiendo requireAdmin() estricto.
+export async function requireAdminOrContador() {
+  const session = await getSession();
+  if (!session || (session.rol !== "admin" && session.rol !== "contador")) {
+    throw new Error("No autorizado");
+  }
+  return session;
+}
+
 export async function requireCliente() {
   const session = await getSession();
   if (!session || session.rol !== "cliente") throw new Error("No autorizado");

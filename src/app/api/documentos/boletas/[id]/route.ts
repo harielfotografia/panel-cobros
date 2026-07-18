@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     const bol = await prisma.boleta.findUnique({
       where: { id, deletedAt: null },
@@ -19,7 +19,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     const body = await req.json();
     const { numeroSii, clienteNombre, fechaEmision, estado, montoTotal, notas, adjuntos } = body;
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     await prisma.boleta.update({ where: { id }, data: { deletedAt: new Date() } });
     return NextResponse.json({ ok: true });

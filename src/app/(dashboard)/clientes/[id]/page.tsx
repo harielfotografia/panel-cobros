@@ -257,7 +257,7 @@ export default function ClienteDetailPage() {
               {[
                 { label: "Impersonar en el portal del cliente", desc: "Accede al portal como el cliente", icon: ExternalLink, fn: impersonar, color: "text-gray-700" },
                 { label: "Enviar email al cliente", desc: "Comunicación directa", icon: Mail, fn: () => window.open(`mailto:${cliente.email}`), color: "text-gray-700" },
-                { label: "Generar factura manual", desc: "Crear factura fuera del ciclo", icon: FileText, fn: () => router.push(`/facturas-admin/facturas/nueva`), color: "text-gray-700" },
+                { label: "Generar factura manual", desc: "Crear factura fuera del ciclo", icon: FileText, fn: () => router.push(`/facturas-admin/facturas/nueva?clienteId=${cliente.id}`), color: "text-gray-700" },
                 { label: "Editar datos del cliente", desc: "Modificar plan, contacto, etc.", icon: Pencil, fn: () => setTab("configuracion"), color: "text-gray-700" },
                 {
                   label: suspendido ? "Reactivar servicio" : "Suspender servicio",

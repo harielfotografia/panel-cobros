@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { signToken } from "@/lib/auth";
+import { enviarMagicLink } from "@/lib/email";
+import crypto from "crypto";
+
+// Enmascara un email para mostrarlo en pantalla sin revelarlo completo
+// (ej. "co***@dominio.cl"), suficiente para que el dueño real lo reconozca.
+function enmascararEmail(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!domain) return email;
+  const visibles = user.slice(0, Math.min(2, user.length));
+  return `${visibles}${"*".repeat(Math.max(user.length - visibles.length, 3))}@${domain}`;
+}
 
 export async function POST(req: NextRequest) {
   const { query } = await req.json();
@@ -33,8 +43,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No encontramos una cuenta con esos datos" }, { status: 404 });
   }
 
-  // Generar token temporal de acceso (24h)
-  const token = signToken({ id: cliente.id, email: cliente.email, rol: "cliente" });
+  // Búsqueda por dominio/nombre/RUT NUNCA otorga sesión por sí sola — esos campos no son
+  // secretos (dominio y nombre son públicos; el RUT de una empresa también suele serlo en Chile).
+  // Solo confirma que existe una cuenta y envía un enlace de acceso al correo YA registrado,
+  // mismo mecanismo (y misma tabla MagicLink) que /api/portal/magic-link.
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await prisma.magicLink.create({ data: { clienteId: cliente.id, token, expiresAt } });
+
+  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const url = `${base}/portal/verify?token=${token}`;
+  await enviarMagicLink(cliente.email, cliente.nombre, url).catch((e) =>
+    console.error("Fallo al enviar magic link (buscar-cliente):", e)
+  );
 
   const sub = cliente.suscripciones[0];
   const vencida = sub ? new Date(sub.fechaVencimiento) < new Date() : true;
@@ -42,8 +63,12 @@ export async function POST(req: NextRequest) {
     ? Math.ceil((new Date(sub.fechaVencimiento).getTime() - Date.now()) / 86400000)
     : 0;
 
-  const res = NextResponse.json({
+  // En desarrollo (sin SMTP) devolvemos el link para poder probar el flujo, igual que magic-link.
+  const devLink = !process.env.SMTP_HOST ? url : undefined;
+
+  return NextResponse.json({
     ok: true,
+    emailEnmascarado: enmascararEmail(cliente.email),
     cliente: {
       nombre: cliente.nombre,
       dominio: cliente.dominio,
@@ -54,15 +79,6 @@ export async function POST(req: NextRequest) {
       diasRestantes,
       fechaVencimiento: sub?.fechaVencimiento ?? null,
     },
+    devLink,
   });
-
-  res.cookies.set("token", token, {
-    httpOnly: true,
-    secure: process.env.COOKIE_SECURE === "true",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24,
-    path: "/",
-  });
-
-  return res;
 }

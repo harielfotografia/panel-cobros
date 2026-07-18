@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 import { calcFechaVencimiento } from "@/lib/documentos";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     const fac = await prisma.factura.findUnique({
       where: { id, deletedAt: null },
@@ -20,7 +20,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     const body = await req.json();
     const { numeroSii, clienteNombre, clienteRut, fechaEmision, plazoPago,
@@ -53,7 +53,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     await prisma.factura.update({ where: { id }, data: { deletedAt: new Date() } });
     return NextResponse.json({ ok: true });

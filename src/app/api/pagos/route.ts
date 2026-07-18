@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 import { registrarPagoConfirmado } from "@/lib/cobros";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAdmin();
+    // Registrar un pago manual (ej. transferencia) es trabajo de contabilidad, no solo de admin.
+    const session = await requireAdminOrContador();
     const { suscripcionId, monto, referencia, notas } = await req.json();
 
     if (!suscripcionId) return NextResponse.json({ error: "suscripcionId requerido" }, { status: 400 });

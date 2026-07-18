@@ -50,6 +50,7 @@ async function getDashboardData() {
       take: 3,
     }),
     prisma.logSuspension.findMany({
+      include: { cliente: { select: { nombre: true } } },
       orderBy: { createdAt: "desc" },
       take: 3,
     }),
@@ -93,7 +94,7 @@ async function getDashboardData() {
     ...logsRecientes.map((l) => ({
       tipo: l.accion === "SUSPENDIDO" ? "suspension" as const : "reactivacion" as const,
       texto: l.accion === "SUSPENDIDO" ? "Servicio suspendido" : "Servicio reactivado",
-      sub: l.clienteId,
+      sub: l.cliente?.nombre ?? l.clienteId,
       tiempo: l.createdAt,
       color: l.accion === "SUSPENDIDO" ? "text-red-600 bg-red-100" : "text-blue-600 bg-blue-100",
     })),

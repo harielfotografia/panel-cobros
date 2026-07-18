@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 import { calcularTotales } from "@/lib/documentos";
 import { getNextNumero } from "@/lib/documentos-server";
 import type { ItemDoc } from "@/lib/documentos";
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { searchParams } = req.nextUrl;
     const estado = searchParams.get("estado");
     const clienteId = searchParams.get("clienteId");
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAdmin();
+    const session = await requireAdminOrContador();
     const body = await req.json();
     const { clienteId, clienteNombre, clienteRut, fecha, vigencia, formaPago, atte, comentarios, items, estado } = body;
 

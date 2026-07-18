@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 import { calcFechaVencimiento } from "@/lib/documentos";
 import { getNextNumero } from "@/lib/documentos-server";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { id } = await params;
     const { tipo, plazoPago } = await req.json(); // tipo: "factura" | "boleta"
 

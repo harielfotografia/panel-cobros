@@ -29,12 +29,25 @@ const PLAN_DESCS: Record<string, string> = {
   "DENTAL-BASICO": "Pensado para clínicas",
 };
 
+// Claves canónicas reales del plugin (Fase SaaS-2) — deben coincidir EXACTAMENTE con las claves
+// que `class-config.php::$claves_gateables` valida del lado de la clínica (`gerty`,
+// `pos_mercadopago`). Solo estos 2 son add-ons opcionales que un plan puede incluir o no — el
+// resto de los módulos del plugin (odontograma, presupuestos, reportes, etc.) son funciones
+// core siempre disponibles, nunca gateadas por plan, así que no se listan acá para no sugerir
+// una capacidad de restricción que no existe.
+const MODULOS_GATEABLES: { clave: string; nombre: string }[] = [
+  { clave: "gerty", nombre: "Gerty (seguros de salud)" },
+  { clave: "pos_mercadopago", nombre: "POS MercadoPago Point" },
+];
+
 export default function PlanesPage() {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ clave: "", nombre: "", precio: "", maxProfesionales: "0" });
+  const [form, setForm] = useState<{ clave: string; nombre: string; precio: string; maxProfesionales: string; modulos: string[] }>(
+    { clave: "", nombre: "", precio: "", maxProfesionales: "0", modulos: [] }
+  );
   const [error, setError] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [animIn, setAnimIn] = useState(false);
@@ -49,17 +62,30 @@ export default function PlanesPage() {
   useEffect(() => { load(); }, []);
 
   function resetForm() {
-    setForm({ clave: "", nombre: "", precio: "", maxProfesionales: "0" });
+    setForm({ clave: "", nombre: "", precio: "", maxProfesionales: "0", modulos: [] });
     setEditingId(null);
     setShowForm(false);
     setError("");
   }
 
   function startEdit(p: Plan) {
-    setForm({ clave: p.clave, nombre: p.nombre, precio: String(p.precio), maxProfesionales: String(p.maxProfesionales) });
+    setForm({
+      clave: p.clave,
+      nombre: p.nombre,
+      precio: String(p.precio),
+      maxProfesionales: String(p.maxProfesionales),
+      modulos: p.modulos ?? [],
+    });
     setEditingId(p.id);
     setShowForm(true);
     setOpenMenu(null);
+  }
+
+  function toggleModulo(clave: string) {
+    setForm((f) => ({
+      ...f,
+      modulos: f.modulos.includes(clave) ? f.modulos.filter((m) => m !== clave) : [...f.modulos, clave],
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -158,6 +184,37 @@ export default function PlanesPage() {
                 />
               </div>
             </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Módulos adicionales incluidos en este plan
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                Solo estos son add-ons opcionales que un plan puede incluir o no — el resto de las
+                funciones del sistema (agenda, fichas, presupuestos, reportes, etc.) son core y
+                siempre están disponibles, sin importar el plan.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {MODULOS_GATEABLES.map((m) => {
+                  const activo = form.modulos.includes(m.clave);
+                  return (
+                    <button
+                      key={m.clave}
+                      type="button"
+                      onClick={() => toggleModulo(m.clave)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        activo
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "bg-gray-50 border-gray-200 text-gray-600 hover:border-blue-300"
+                      }`}
+                    >
+                      {m.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {error && <p className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
             <div className="flex gap-2 justify-end">
               <button type="button" onClick={resetForm} className="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">

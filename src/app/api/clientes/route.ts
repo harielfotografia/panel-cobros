@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAdminOrContador } from "@/lib/auth";
 import { generateServiceKey } from "@/lib/service-key";
 
 export async function GET() {
   try {
-    await requireAdmin();
+    // Lectura: también accesible para CONTADOR (necesita ver el estado de cuenta de cada cliente).
+    await requireAdminOrContador();
     const clientes = await prisma.cliente.findMany({
       include: {
         plan: true,
@@ -28,6 +29,18 @@ export async function POST(req: NextRequest) {
     await requireAdmin();
     const body = await req.json();
     const { nombre, email, telefono, rut, dominio, coolifyAppId, apiUrl, planId, vendedoraId, monto, metodoPago, diasGracia } = body;
+
+    // Misma validación que ya existía solo en PUT /api/clientes/[id] — sin esto, un cliente
+    // podía crearse con apiUrl http:// y clinic-api.ts enviaría la service key en texto plano.
+    if (apiUrl) {
+      try {
+        if (new URL(apiUrl).protocol !== "https:") {
+          return NextResponse.json({ error: "apiUrl debe usar HTTPS" }, { status: 400 });
+        }
+      } catch {
+        return NextResponse.json({ error: "apiUrl inválida" }, { status: 400 });
+      }
+    }
 
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
 

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClienteSelectorDoc } from "@/components/documentos/ClienteSelectorDoc";
 import { ItemsEditor } from "@/components/documentos/ItemsEditor";
@@ -22,6 +22,25 @@ export default function NuevaFacturaPage() {
   const [cliente, setCliente] = useState<{ clienteId: string | null; clienteNombre: string; clienteRut: string }>({
     clienteId: null, clienteNombre: "", clienteRut: "",
   });
+
+  // "Generar factura manual" desde la ficha de un cliente pasa ?clienteId=... — antes esto se
+  // ignoraba por completo (la URL de destino no llevaba ningún dato) y el formulario abría en
+  // blanco, obligando a re-buscar al mismo cliente desde cero. Con el clienteId ya en la URL, se
+  // trae su nombre/RUT reales para que el selector muestre la selección correcta Y la validación
+  // de "guardar" (que exige clienteNombre) no falle con un cliente ya elegido.
+  // Se lee `location.search` directo (no `useSearchParams()`): ese hook exige envolver la página
+  // en <Suspense>, y se confirmó en vivo (misma sesión, ver portal/(panel)/pagar/page.tsx) que ese
+  // patrón puede dejar el contenido real streameado sin nunca reemplazar el fallback — mismo bug,
+  // evitado aquí por completo usando el mismo approach ya verificado como seguro.
+  useEffect(() => {
+    const clienteId = new URLSearchParams(window.location.search).get("clienteId");
+    if (!clienteId) return;
+    fetch(`/api/clientes/${clienteId}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data) setCliente({ clienteId: data.id, clienteNombre: data.nombre, clienteRut: data.rut ?? "" });
+      });
+  }, []);
   const [numeroSii, setNumeroSii] = useState("");
   const [fechaEmision, setFechaEmision] = useState(new Date().toISOString().slice(0, 10));
   const [plazoPago, setPlazoPago] = useState("30");

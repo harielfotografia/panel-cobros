@@ -18,7 +18,13 @@ const EMPRESA = process.env.NEXT_PUBLIC_EMPRESA_NOMBRE || "DentalCloud";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/portal/login");
-  if (session.rol !== "cliente") redirect("/");
+  // Mismo criterio que (dashboard)/layout.tsx: cada rol a SU propia home, nunca a un
+  // destino fijo que lo rebote de vuelta — evita el loop infinito ya documentado ahí
+  // (antes, una sesión "vendedora" llegando aquí se mandaba a "/", que a su vez la
+  // mandaba de vuelta a "/portal").
+  if (session.rol === "vendedora") redirect("/vendedora");
+  if (session.rol === "admin" || session.rol === "contador") redirect("/");
+  if (session.rol !== "cliente") redirect("/portal/login");
 
   const cookieStore = await cookies();
   const adminToken = cookieStore.get("admin_token");

@@ -87,6 +87,11 @@ model Cliente {
   coolifyAppId   String?       @unique @map("coolify_app_id")
   serviceKey     String        @unique @default(cuid()) @map("service_key")
   apiUrl         String?       @map("api_url")
+  // Versión de dental-ora-plugin/admin-panel actualmente desplegada en esta clínica (tag/commit
+  // de git). Nullable y aditivo — null en clientes existentes hasta el primer deploy fan-out.
+  // La ruta en disco se deriva de `dominio` por convención (/var/www/{dominio}/...), no se
+  // guarda ruta ni host aparte porque todas las clínicas viven en un único VPS propio.
+  version        String?       @map("version")
   planId         String?       @map("plan_id")
   plan           Plan?         @relation(fields: [planId], references: [id])
   rut            String?
@@ -103,6 +108,7 @@ model Cliente {
   cotizaciones   Cotizacion[]
   facturas       Factura[]
   boletas        Boleta[]
+  logsSuspension LogSuspension[]
 }
 
 model Anuncio {
@@ -278,6 +284,7 @@ model Configuracion {
 model LogSuspension {
   id           String   @id @default(cuid())
   clienteId    String   @map("cliente_id")
+  cliente      Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   accion       String
   motivo       String
   realizadoPor String   @map("realizado_por")

@@ -1,13 +1,26 @@
 ﻿"use client";
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CreditCard, Zap, Building2 } from "lucide-react";
-import { Suspense } from "react";
 
 function PagarForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const errorParam = params.get("error");
+  // Antes usaba useSearchParams() + un <Suspense> propio alrededor de este formulario.
+  // Se reemplaza por lectura directa de location.search en un efecto: esta página ya está
+  // forzada a dinámica por el layout del portal (getSession()/cookies() en
+  // portal/(panel)/layout.tsx), así que no gana nada de useSearchParams() salvo el requisito
+  // de envolver en Suspense — y ese boundary anidado (layout async + Suspense propio del hijo)
+  // dejaba el contenido real streameado en un <div hidden> que nunca se intercambiaba con el
+  // fallback "Cargando..." (reproducido en vivo: se quedaba colgado incluso en el HTML de
+  // producción real, con recarga completa de página, no solo en dev/HMR).
+  const [errorParam, setErrorParam] = useState<string | null>(null);
+  useEffect(() => {
+    // Leer window.location recién en el efecto (no en un lazy initializer de useState) a propósito:
+    // durante el render de servidor/hidratación inicial "error" siempre debe verse ausente para que
+    // coincida con el HTML ya enviado — hacerlo antes causaría un mismatch de hidratación.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setErrorParam(new URLSearchParams(window.location.search).get("error"));
+  }, []);
 
   const [loading, setLoading] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -148,10 +161,8 @@ function PagarForm() {
 
 export default function PagarPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-gray-400">Cargando...</div>}>
-      <div className="p-6">
-        <PagarForm />
-      </div>
-    </Suspense>
+    <div className="p-6">
+      <PagarForm />
+    </div>
   );
 }

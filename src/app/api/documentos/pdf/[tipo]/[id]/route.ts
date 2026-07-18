@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminOrContador } from "@/lib/auth";
 import { formatCLP } from "@/lib/documentos";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
@@ -117,7 +117,7 @@ async function generarPDF(tipo: string, data: Record<string, unknown>, empresa: 
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ tipo: string; id: string }> }) {
   try {
-    await requireAdmin();
+    await requireAdminOrContador();
     const { tipo, id } = await params;
 
     let data: Record<string, unknown> | null = null;

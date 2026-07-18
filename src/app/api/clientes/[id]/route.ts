@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAdminOrContador } from "@/lib/auth";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin();
+    // Lectura: también accesible para CONTADOR.
+    await requireAdminOrContador();
     const { id } = await params;
     const cliente = await prisma.cliente.findUnique({
       where: { id },

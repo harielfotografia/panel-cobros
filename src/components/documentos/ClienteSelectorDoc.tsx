@@ -11,6 +11,17 @@ type Props = {
 export function ClienteSelectorDoc({ value, onChange }: Props) {
   const [clientes, setClientes] = useState<ClienteSimple[]>([]);
   const [modo, setModo] = useState<"sistema" | "libre">(value.clienteId ? "sistema" : "libre");
+  const [clienteIdVisto, setClienteIdVisto] = useState(value.clienteId);
+
+  // Si `value.clienteId` llega DESPUÉS del montaje (ej. una página que precarga el cliente desde
+  // un ?clienteId= de la URL con un fetch async), el useState de arriba ya quedó fijo en "libre"
+  // para siempre — el dato termina correcto pero el tab visible es el equivocado. Se ajusta el modo
+  // en el momento del render (patrón "adjusting state when a prop changes" de React), no dentro de
+  // un useEffect — así React re-renderiza antes de pintar en pantalla, sin el parpadeo de un efecto.
+  if (value.clienteId !== clienteIdVisto) {
+    setClienteIdVisto(value.clienteId);
+    if (value.clienteId) setModo("sistema");
+  }
 
   useEffect(() => {
     fetch("/api/clientes").then(r => r.json()).then((data: unknown[]) =>

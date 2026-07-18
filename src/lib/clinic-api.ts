@@ -12,7 +12,7 @@ interface PlanPayload {
 interface UsoResponse {
   profesionales: number;
   pacientes: number;
-  citas_mes: number;
+  citasMes: number; // el plugin (class-servicio.php::get_uso()) devuelve camelCase, no snake_case
 }
 
 // Retry con backoff exponencial: 0ms → 1s → 4s
@@ -23,6 +23,9 @@ async function callClinic(
   path: string,
   body?: unknown,
 ): Promise<Response> {
+  if (new URL(apiUrl).protocol !== "https:") {
+    throw new Error(`apiUrl debe usar HTTPS: ${apiUrl}`);
+  }
   const url = `${apiUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
   let ultimoError: Error = new Error("Sin intentos");
 

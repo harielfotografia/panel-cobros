@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireAdminOrContador } from "@/lib/auth";
 
 async function getOrCreate() {
   return prisma.configuracion.upsert({
@@ -12,7 +12,9 @@ async function getOrCreate() {
 
 export async function GET() {
   try {
-    await requireAdmin();
+    // Lectura: datos de la empresa (nombre/RUT/logo) se usan también al armar documentos —
+    // CONTADOR necesita poder leerlos aunque no pueda editarlos (ver PUT más abajo).
+    await requireAdminOrContador();
     const config = await getOrCreate();
     return NextResponse.json(config);
   } catch {
