@@ -11,6 +11,11 @@ const PUBLIC_PATHS = [
   "/api/cron",
   "/vendedora/login",
   "/api/vendedoras/login",
+  // Autenticados con X-Dora-Service-Key (requireServiceKey en el route handler), no con la cookie
+  // de sesión admin — sin esto, proxy.ts redirigía cualquier llamada de una clínica a /login antes
+  // de que el handler alcanzara a validar el header. Bug preexistente: el endpoint quedaba inservible
+  // para cualquier caller externo (el único cliente real es el plugin WordPress de cada clínica).
+  "/api/suscripcion",
 ];
 
 const PORTAL_PREFIX = "/portal";

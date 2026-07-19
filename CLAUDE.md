@@ -777,7 +777,7 @@ Verde  < 60% | Amarillo 60-85% | Naranja 85-99% | Rojo = vencida o suspendida
 ---
 
 ## Deploy actual (producción)
-- **URL:** https://portal.dabstudio.cl (DNS configurado, pendiente SSL activarse)
+- **URL:** https://portal.dabstudio.cl (HTTPS activo y verificado)
 - **IP VPS:** 45.7.229.211 (OpenCloud Chile, Ubuntu 22.04, 2vCPU 4GB)
 - **SSH:** `ssh -p 50803 root@45.7.229.211`
 - **Coolify:** http://45.7.229.211:8000 (admin@panel.cl / admin123)
@@ -801,10 +801,35 @@ Verde  < 60% | Amarillo 60-85% | Naranja 85-99% | Rojo = vencida o suspendida
 - Fondo general: `bg-gray-50` (no blanco puro)
 
 ## Por implementar
-- Plugin WordPress (endpoints `PUT /servicio/estado`, `PUT /servicio/plan`, `GET /servicio/uso`)
-- Restricción de rutas para rol CONTADOR en proxy.ts
-- HTTPS activo en portal.dabstudio.cl (`COOKIE_SECURE=true` en Coolify)
 - Webhook MP preapproval recurrente para renovaciones automáticas (parcialmente implementado)
-- Portal vendedoras (actualmente sin login propio)
 - Paginación real en tablas (Pagos, Clientes)
-- Configurar MP_ACCESS_TOKEN real en Coolify
+- Separar `Plan.modulos` (gating por plan, controla el maestro) de los módulos propios de la clínica
+  (`wp_dora_config.modulos`, self-service) — hoy comparten el mismo campo en el plugin y un push de
+  plan podría pisar las preferencias de la clínica. Ver `class-servicio.php::set_plan()`.
+- Enforcement real de módulos por plan (Gerty, POS MercadoPago, Convenios, Sala de espera) — hoy el
+  campo se guarda pero ningún endpoint del plugin lo valida todavía.
+
+### Resuelto (2026-07-18)
+- Plugin WordPress: endpoints `PUT /servicio/estado`, `PUT /servicio/plan`, `GET /servicio/uso` —
+  implementados y verificados en vivo contra `clinica.dabstudio.cl`
+- Restricción de rutas para rol CONTADOR en proxy.ts
+- HTTPS verificado en portal.dabstudio.cl (`COOKIE_SECURE=true` en Coolify)
+- Portal vendedoras — ya existe con login propio (`/vendedora/login` + `/vendedora`)
+- Suspensión suave: GET (lectura) pasa incluso suspendido; solo se bloquea escritura (POST/PUT/DELETE)
+  — ver `class-auth.php::require_auth()`. El panel de la clínica muestra un banner, no pantalla completa.
+- Asignación referencial de profesionales por box (`wp_dora_box_staff`) — gestión interna, no
+  restringe el agendamiento. Ver `Configuracion.tsx` → tab "Boxes / sillones".
+- `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` — pendiente de cargar en Coolify con las claves de
+  producción del usuario (ya las tiene, falta el paso de Coolify + webhook en mercadopago.cl)
+- **Bug corregido — `/api/suscripcion/*` nunca funcionó para llamadas externas:** `proxy.ts`
+  redirigía cualquier request sin la cookie de sesión admin a `/login`, incluyendo
+  `/api/suscripcion/estado` y `/api/suscripcion/checkout`, que se autentican con el header
+  `X-Dora-Service-Key` (no con cookie). Se agregó `/api/suscripcion` a `PUBLIC_PATHS` — la
+  autenticación real la sigue haciendo `requireServiceKey()` dentro de cada handler, `proxy.ts`
+  solo dejaba de bloquearlo antes de llegar ahí. **Requiere redeploy en Coolify para tomar efecto
+  en producción** (verificado localmente contra el dev server, no contra portal.dabstudio.cl).
+- Widget "Pagar suscripción" en el panel de la clínica (`admin-panel/src/components/
+  SuscripcionMaestroWidget.tsx`, visible en `/dashboard` solo para ADMIN): consulta estado y genera
+  el link de pago (Checkout Pro, redirección — no Bricks embebido) vía un proxy PHP nuevo en el
+  plugin (`class-suscripcion-maestro.php`) que llama al maestro server-to-server con
+  `DORA_SERVICE_KEY`. El key nunca llega al navegador — verificado en la respuesta al frontend.
